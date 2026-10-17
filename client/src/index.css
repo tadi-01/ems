@@ -185,6 +185,45 @@ p {
   background: #e5e7eb;
 }
 
+/* A form field with its label above the input. */
+.field {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.data-form .field input,
+.data-form .field select {
+  flex: none;
+  width: 100%;
+}
+
+/* The payslip is a plain bordered box with a small table inside. */
+.payslip {
+  max-width: 520px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #d8dee8;
+  border-radius: 4px;
+}
+
+.payslip table {
+  min-width: 0;
+}
+
+/* Things with this class are left out of the printed page. */
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  .payslip {
+    border: 0;
+  }
+}
+
 @media (max-width: 480px) {
   .welcome-box {
     padding: 28px 22px;

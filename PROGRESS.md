@@ -2,7 +2,7 @@
 
 Single source of truth for the Employee Management System. A new AI or group member must be able to continue from this file alone. Update it after every phase and after any fix. Only one person edits it at a time.
 
-Last updated by: Claude, branch `claude1`, after Phase 5.
+Last updated by: Claude, branch `claude1`, after Phase 6.
 
 ## 1. Project summary
 
@@ -67,21 +67,22 @@ Decisions made after the original instructions (flagged for the group to confirm
 - Leave balance is calculated, not stored: each employee has 21 Annual leave days per calendar year (a constant in `server/utils/leaveHelpers.js`); remaining days = 21 minus the days of Approved Annual leave that start in that year. Sick and Unpaid leave do not use the balance.
 - Leave days are calendar days with the start and end day both counted (weekends and public holidays are not excluded). A request must start and end in the same calendar year.
 - Leave statuses are Pending, Approved, Rejected and Cancelled. An employee can cancel only a Pending request; it stays in history as Cancelled.
+- Payroll (Phase 6): one payslip per employee per month (unique index on employee + month). The server always calculates net salary; a net value sent by the browser is ignored. Basic salary starts from `Employee.salary` but is copied onto the payslip so later salary changes do not rewrite old payslips. Tax is a typed amount, not a percentage (simplest to explain; the group can change this, see Known issues 27). Money has no currency symbol. Only Admin and HR create, change or delete payslips; every user can read only their own.
 
 ## 3. Phase status table
 
 | Phase | Name | Status | Owner |
 |---|---|---|---|
-| 1 | Project setup, folder structure, DB connection | Complete (not formally tested) | Unassigned (built before this file existed) |
-| 2 | Auth: models, routes, JWT middleware, login/register pages | Complete (not formally tested) | Unassigned |
-| 3 | Employees and departments | Complete (not formally tested) | Unassigned |
-| 4 | Attendance | Complete (not formally tested) | Claude, branch `claude1` |
-| 5 | Leave | Complete (not formally tested) | Claude, branch `claude1` |
-| 6 | Payroll | Not started | |
+| 1 | Project setup, folder structure, DB connection | Complete (Not tested) | Unassigned (built before this file existed) |
+| 2 | Auth: models, routes, JWT middleware, login/register pages | Complete (Not tested) | Unassigned |
+| 3 | Employees and departments | Complete (Not tested) | Unassigned |
+| 4 | Attendance | Complete (Not tested) | Claude, branch `claude1` |
+| 5 | Leave | Complete (Not tested) | Claude, branch `claude1` |
+| 6 | Payroll | Complete (Not tested) | Claude, branch `claude1` |
 | 7 | Dashboard and responsive CSS | Not started | |
 | 8 | Deployment and README | Not started | |
 
-"Complete (not formally tested)" means the code exists and was read and reviewed for this file, but it has not been run against a real MongoDB database by the person writing this file.
+"Complete (Not tested)" means the code exists, was read and reviewed, and passed the checks listed on its "Test status" line (syntax checks, a client build, and logic scripts that use an in-memory stand-in for the database). It has NOT been run against a real MongoDB database or clicked through in a browser. Change a phase to "Tested" only after the group has run its "How to test" steps and they pass.
 
 ## 4. Per-phase details
 
@@ -259,6 +260,55 @@ Lecturer questions:
 - How do you stop overlapping requests? (Two ranges overlap when each starts on or before the day the other ends, so the server looks for a Pending or Approved request with startDate <= new end date and endDate >= new start date.)
 - Why check the balance again when approving? (Two Pending requests can each fit alone but not together. Only Approved days count, so the check at approval time is the one that decides.)
 
+### Phase 6: payroll
+
+Files:
+- `server/models/Payroll.js`: Payroll schema with the unique compound index on employee + month
+- `server/utils/payrollHelpers.js`: `isValidMonth`, `readAmount`, `calculateNetSalary`, `readPayslipAmounts` (checks the numbers and calculates net salary)
+- `server/controllers/payrollController.js`: `createPayslip`, `updatePayslip`, `deletePayslip`, `getAllPayslips`, `getMyPayslips`
+- `server/routes/payrollRoutes.js`: payroll routes
+- `server/server.js`: now also mounts `/api/payroll`
+- `client/src/services/payrollService.js`: API calls for payroll
+- `client/src/pages/Payroll.jsx`: payslip list; Admin and HR also get the form, a month filter, Edit and Delete; every user gets View
+- `client/src/components/PayrollForm.jsx`: labelled form to create a payslip or change its amounts (employee and month are locked while editing)
+- `client/src/components/Payslip.jsx`: printable payslip with Print and Back buttons
+- `client/src/App.jsx`: new `/payroll` protected route and a "Payroll" button on the temporary dashboard
+- `client/src/index.css`: `.field` (label above input), `.payslip`, and `@media print` with `.no-print`
+
+Routes (all require login):
+
+| Method | Path | Access | Request body | Response |
+|---|---|---|---|---|
+| GET | /api/payroll/me | Any logged in (needs an Employee record with the same email) | none | array of the user's own payslips, newest month first; 404 if no matching employee |
+| GET | /api/payroll?month=YYYY-MM | Admin, HR | none | array of payslips with `employee` populated (name, employeeId, designation); month filter optional |
+| POST | /api/payroll | Admin, HR | employee (id), month, optional basicSalary, allowances, bonuses, deductions, tax | 201 the new payslip; 400 for a bad month, bad amounts, net below zero, or a duplicate; 404 unknown employee |
+| PUT | /api/payroll/:id | Admin, HR | basicSalary, allowances, bonuses, deductions, tax | the updated payslip with net recalculated; employee and month cannot change |
+| DELETE | /api/payroll/:id | Admin, HR | none | `{ message }` |
+
+Model `Payroll`: employee (ObjectId ref `Employee`), month (text `YYYY-MM`), basicSalary, allowances, bonuses, deductions, tax (numbers, zero or more), netSalary (number, calculated by the server), createdBy (ObjectId ref `User`), timestamps. Unique compound index `{ employee: 1, month: 1 }`.
+
+Environment variables: none new.
+
+How to test:
+1. Start the server and client as in Phase 4. Have an Admin or HR user, a department, and an Employee whose email matches a registered user with the Employee role.
+2. Log in as Admin or HR, open Payroll, choose the employee (the basic salary fills in from the employee's salary), pick a month, enter allowances 100, bonuses 50, deductions 20, tax 130 and press Create payslip. A row appears; net salary equals basic + 100 + 50 - 20 - 130.
+3. Create the same employee and month again. Expect "A payslip for this employee and month already exists."
+4. Press Edit on the row, change the tax, press Update payslip. The net salary changes. The employee and month fields are locked.
+5. Press View, then Print payslip. The print preview shows only the payslip and no buttons.
+6. Use the month filter to show one month.
+7. Log in as the Employee user and open Payroll. Only their own payslips appear, with no form and no Edit or Delete; View and Print work.
+8. In Postman, send POST /api/payroll with an Employee token and expect 403. Send a valid create as HR with `"netSalary": 99999` added to the body and check the saved net salary is still the calculated one.
+9. Delete a payslip and check it disappears.
+
+Test status: NOT yet run against a real MongoDB or in a browser. What was checked: all server files pass `node --check`; the client builds with `vite build`; a script with an in-memory stand-in for the database passed 26 checks (net salary maths, rounding, month format, blank basic salary uses the employee salary, a net value sent by the browser is ignored, tax larger than earnings is rejected, duplicate payslip rejected, unknown employee gives 404, update recalculates net, employees see only their own payslips, delete); the unique index is present on the schema. The real index behaviour and the print preview are still untested.
+
+How it works: Admin or HR picks an employee and a month and types the allowances, bonuses, deductions and tax. The server checks that every amount is a number of zero or more, then calculates net salary as basic + allowances + bonuses - deductions - tax, so the browser cannot choose its own net pay. The basic salary is copied from the employee onto the payslip, so changing the employee's salary later does not change old payslips. A unique index on employee + month makes the database refuse a second payslip for the same month, and the controller turns that error into a clear message. Employees can only call the "my payslips" route, which finds their Employee record by email, and the Payslip page uses the browser's print dialog with the buttons hidden by a print stylesheet.
+
+Lecturer questions:
+- Why does the server calculate net salary instead of the browser? (The browser can be changed by the user. Anything that affects money must be worked out on the server from the raw inputs.)
+- Why copy the basic salary onto the payslip? (A payslip is a record of what was paid that month. If it only pointed to the employee's current salary, a raise would silently change past payslips.)
+- How do you stop two payslips for the same month? (A unique compound index on employee + month. The database enforces it, and the code catches error 11000 and shows a friendly message.)
+
 ## 5. Known issues and bugs
 
 1. SECURITY: `/api/auth/register` accepts `role` from the request, so anyone can register as Admin. Suggested fix: always create `Employee`; let an Admin change roles, or seed the first Admin manually.
@@ -285,6 +335,12 @@ Lecturer questions:
 22. Leave dates use UTC, the same as attendance (see 18).
 23. `client/src/pages/Leave.jsx` and `server/controllers/leaveController.js` are 152 lines each, slightly over the "about 150" rule; `LeaveReview.jsx` was split out to keep the page short.
 24. An Admin or HR user without an Employee record sees the review section but cannot apply for leave (the page says so).
+25. Payroll: the print layout hides only the payslip buttons. When Phase 7 adds a sidebar and top bar, they must also get the `no-print` class (or be hidden in `@media print`) or they will appear on the printed payslip.
+26. Payroll: Admin and HR see only the management view, not their own payslips, even if an Employee record with their email exists. Suggested fix: add a "My payslips" table that calls `getMyPayslips` when the user has a matching Employee record.
+27. Payroll: tax is a typed amount. If the lecturer expects a percentage, change `readPayslipAmounts` in `server/utils/payrollHelpers.js` to calculate tax from a rate. The payslip also has no currency symbol, company name or date issued.
+28. Payroll: unpaid leave and absences do not reduce pay automatically. HR types the deductions by hand.
+29. Payroll: `<input type="month">` is not a picker in every browser (for example desktop Firefox); it becomes a text box and the user types `2026-10`. The server rejects other formats with "Month must look like 2026-10."
+30. Payroll: updating a payslip does not record who changed it; `createdBy` stays the original creator.
 
 ## 6. Naming conventions and patterns
 
@@ -296,6 +352,7 @@ Lecturer questions:
 - Models use `{ timestamps: true }` and `ref` + `populate` for relations.
 - Shared server helpers live in `server/utils/` (`getEmployeeForUser.js` has a default export; `leaveHelpers.js` has named exports). Large controllers are split by audience (`leaveController.js` for employees, `leaveReviewController.js` for Admin and HR).
 - Statuses are plain strings checked with `enum`, and shown in the client as `<span className="status status-<lowercase status>">`.
+- Period values that must be unique are plain text: `YYYY-MM-DD` for attendance dates and `YYYY-MM` for payroll months. Money is rounded to 2 decimals by the server (`server/utils/payrollHelpers.js`) and shown with `toFixed(2)` in the client.
 - Client: reusable pieces of a page go in `components/` (for example `LeaveReview.jsx`); pages are PascalCase `.jsx` files in `pages/` with a default export; each API area has a `services/<name>Service.js` with named exports using the shared `api` instance; services return `response.data`.
 - Forms keep values in one `form` state object and use a shared `updateField` handler based on the input `name`.
 - Errors shown with `requestError.response?.data?.message`, rendered as `<p className="error">`.
@@ -303,13 +360,12 @@ Lecturer questions:
 
 ## 7. Next step
 
-Before Phase 6: the group should run the Phase 4 and Phase 5 test steps against a real MongoDB and change those statuses to "Tested" if they pass. Also decide whether to fix Known issues 1 (anyone can register as Admin), 11 (design drift) and 20 (approving your own leave) now or later.
+Before Phase 7: the group should run the "How to test" steps for Phases 4, 5 and 6 against a real MongoDB and change those statuses to "Tested" if they pass. Also decide whether to fix Known issues 1 (anyone can register as Admin) and 20 (an Admin or HR user can approve their own leave) first; both are small server changes.
 
-Phase 6: Payroll. Build only this phase, then stop.
-- Rule from the locked decisions: basic + allowances + bonuses - deductions - tax = net salary, with a printable payslip.
-- Server: `models/Payroll.js` (employee ref `Employee`, month as text `YYYY-MM`, basicSalary, allowances, bonuses, deductions, tax, netSalary, createdBy ref `User`, timestamps) with a unique compound index on employee + month so one payslip exists per employee per month (same idea as attendance, explain it). `controllers/payrollController.js` and `routes/payrollRoutes.js`, mounted at `/api/payroll` in `server/server.js`. Admin and HR create or update a payslip (the server calculates `netSalary`; never trust a net value sent by the browser) and list payslips by month. Employees can only list and view their own payslips, found with `getEmployeeForUser` from `server/utils/getEmployeeForUser.js`.
-- Suggested default: start `basicSalary` from `Employee.salary` but store the value on the payslip so later salary changes do not rewrite old payslips. Tax can be a simple percentage or a typed amount; ask the group which they want before building.
-- Client: `services/payrollService.js`, `pages/Payroll.jsx` (Admin and HR form and month list; employee sees own payslips), a printable `components/Payslip.jsx` using a simple print stylesheet (`@media print`) and `window.print()`, a route in `App.jsx`, a dashboard link.
-- Depends on: `models/Employee.js` (`salary`), `middleware/authMiddleware.js` (`protectRoute`, `allowRoles`), `server/utils/getEmployeeForUser.js`, `client/src/services/api.js`, and the `.status` and table styles in `client/src/index.css`.
-- Phase 7 (dashboard) needs the monthly payroll total, so keep a `month` field and a `netSalary` field on every payslip.
-- Follow the Naming conventions above, keep each file under about 150 lines, no emojis, use CSS classes rather than new colors outside the palette.
+Phase 7: Dashboard and responsive CSS. Build only this phase, then stop.
+- Server: `controllers/dashboardController.js` and `routes/dashboardRoutes.js`, mounted at `/api/dashboard` in `server/server.js`, for Admin and HR. It returns: total employees (`Employee.countDocuments()`); present today (`Attendance.countDocuments({ date: today })`, using the same `YYYY-MM-DD` text as attendance); on leave today (Approved `Leave` records where `startDate <= today <= endDate`); monthly payroll (the sum of `netSalary` for the current `YYYY-MM` month; read the payslips and add them up in JavaScript instead of an aggregation pipeline); and the number of employees in each department (loop over `Department.find()` and use `Employee.countDocuments({ department: id })`). Keep each file under about 150 lines and explain any maths in comments.
+- Client: replace the temporary `Dashboard` function inside `client/src/App.jsx` with `pages/Dashboard.jsx` showing simple cards for the totals and a plain table for employees per department. Employees (non-Admin, non-HR) should see a simple welcome and links, not company totals.
+- Layout and design (fixes Known issue 11): add `components/Layout.jsx` used with `<Outlet />` inside the protected routes, with a fixed left sidebar (links: Dashboard, Employees, Departments, Attendance, Leave, Payroll), a top bar showing the logged-in name and role with a Log out button, and a content area. Move colors and spacing into CSS variables at the top of `client/src/index.css`, switch the primary color to a muted navy, remove `box-shadow` and the uppercase "eyebrow" style, use a 4px border radius and 1px grey borders, and keep one font stack. Make the sidebar collapse or stack on narrow screens so every page works on a phone (feature 8). Give the sidebar and top bar the `no-print` class (Known issue 25).
+- Depends on: `models/Employee.js`, `models/Department.js`, `models/Attendance.js` (`date` text), `models/Leave.js` (`startDate`, `endDate`, `status`), `models/Payroll.js` (`month`, `netSalary`), `middleware/authMiddleware.js`, `client/src/App.jsx`, `client/src/index.css`, and the existing pages, which each start with `<main className="content-page">` and the login pages that use `<main className="page">`.
+- Follow the Naming conventions above, no emojis, and use only the palette in the DESIGN rules.
+- Phase 8 afterwards: deployment (Vercel, Render, Atlas), a real `README.md`, and moving the hardcoded `http://localhost:5000/api` into `VITE_API_URL` (Known issue 9).
