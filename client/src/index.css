@@ -1,7 +1,31 @@
+/* Colors, spacing and sizes are defined once here and reused below. */
 :root {
-  font-family: Arial, sans-serif;
-  color: #1f2937;
-  background: #eef2f7;
+  --color-primary: #1f3a5f;
+  --color-primary-dark: #162b47;
+  --color-text: #1f2937;
+  --color-muted: #6b7280;
+  --color-page: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-border: #d1d5db;
+  --color-border-light: #e5e7eb;
+
+  /* Green, red and amber are used only for status labels and error messages. */
+  --status-green-text: #166534;
+  --status-green-bg: #dcfce7;
+  --status-red-text: #991b1b;
+  --status-red-bg: #fee2e2;
+  --status-amber-text: #92400e;
+  --status-amber-bg: #fef3c7;
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --radius: 4px;
+  --sidebar-width: 220px;
+
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-text);
+  background: var(--color-page);
 }
 
 * {
@@ -12,79 +36,162 @@ body {
   margin: 0;
 }
 
+h1 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.5rem;
+}
+
+h2 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 1.15rem;
+}
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+/* Login and register pages: a centred box without the sidebar. */
 .page {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 24px;
-}
-
-.welcome-box {
-  width: min(100%, 560px);
-  padding: 40px;
-  background: white;
-  border: 1px solid #d8dee8;
-  border-radius: 8px;
-  box-shadow: 0 12px 30px rgb(31 41 55 / 10%);
+  padding: var(--space-3);
 }
 
 .auth-box {
   width: min(100%, 440px);
-  padding: 32px;
-  background: white;
-  border: 1px solid #d8dee8;
-  border-radius: 8px;
-  box-shadow: 0 12px 30px rgb(31 41 55 / 10%);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
 .auth-box label {
   display: block;
-  margin-top: 16px;
+  margin-top: var(--space-2);
   font-weight: bold;
 }
 
 .auth-box input,
 .auth-box select {
   width: 100%;
-  margin-top: 6px;
-  padding: 10px;
-  border: 1px solid #c8d0dc;
-  border-radius: 4px;
-  font: inherit;
+  margin-top: var(--space-1);
 }
 
-.error {
-  padding: 10px;
-  color: #991b1b;
-  background: #fee2e2;
-  border-radius: 4px;
+.auth-box .button {
+  margin-top: var(--space-2);
 }
 
-button.button {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
+.eyebrow {
+  margin: 0 0 var(--space-1);
+  color: var(--color-muted);
+  font-size: 0.9rem;
 }
 
-.dashboard-links {
+/* Logged-in pages: a fixed sidebar on the left, a top bar and the content. */
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+  color: white;
+  background: var(--color-primary);
+}
+
+.sidebar-title {
+  margin: 0 0 var(--space-3);
+  font-weight: bold;
+}
+
+.sidebar-link {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  color: white;
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: var(--color-primary-dark);
+}
+
+.layout-main {
+  margin-left: var(--sidebar-width);
+}
+
+.topbar {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 20px 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .content-page {
   width: min(100% - 32px, 1200px);
   margin: 0 auto;
-  padding: 32px 0;
+  padding: var(--space-3) 0;
+}
+
+/* Buttons: solid primary by default, outlined for secondary actions. */
+.button {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  color: white;
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-primary-dark);
+}
+
+.button-secondary {
+  color: var(--color-primary);
+  background: var(--color-surface);
+}
+
+.button-secondary:hover {
+  background: var(--color-page);
+}
+
+.error {
+  padding: var(--space-1) var(--space-2);
+  color: var(--status-red-text);
+  background: var(--status-red-bg);
+  border-radius: var(--radius);
+}
+
+/* Forms: the same look for every input. */
+input,
+select {
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font: inherit;
 }
 
 .data-form,
 .search-form {
   display: flex;
-  gap: 10px;
   flex-wrap: wrap;
-  margin: 18px 0;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
 }
 
 .data-form input,
@@ -92,16 +199,35 @@ button.button {
 .search-form input {
   flex: 1 1 180px;
   min-width: 0;
-  padding: 10px;
-  border: 1px solid #c8d0dc;
-  border-radius: 4px;
-  font: inherit;
 }
 
+/* A form field with its label above the input. */
+.field {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: bold;
+}
+
+.data-form .field input,
+.data-form .field select {
+  flex: none;
+  width: 100%;
+  font-weight: normal;
+}
+
+/* Buttons keep their normal height at the bottom of a wrapping form row. */
+.data-form .button {
+  align-self: flex-end;
+}
+
+/* Tables: plain rows with thin grey lines. */
 .table-wrap {
   overflow-x: auto;
-  background: white;
-  border: 1px solid #d8dee8;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
 table {
@@ -110,113 +236,110 @@ table {
   border-collapse: collapse;
 }
 
+.narrow-table,
+.payslip table {
+  min-width: 0;
+}
+
 th,
 td {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border-light);
   text-align: left;
 }
 
 th {
-  background: #f3f4f6;
+  background: var(--color-page);
+}
+
+/* Keeps short values such as 2026-10 on one line. */
+.nowrap {
+  white-space: nowrap;
 }
 
 td button {
-  padding: 6px 9px;
-  border: 1px solid #c8d0dc;
-  border-radius: 4px;
-  background: white;
+  padding: 4px var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font: inherit;
   cursor: pointer;
 }
 
-.eyebrow {
-  margin: 0 0 12px;
-  color: #2563eb;
+/* Dashboard cards: one total each. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.card {
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.card-label {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+.card-value {
+  margin: var(--space-1) 0 0;
+  color: var(--color-primary);
+  font-size: 1.75rem;
   font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
-}
-
-h1 {
-  margin: 0 0 16px;
-  font-size: 2rem;
-}
-
-p {
-  line-height: 1.6;
-}
-
-.button {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 10px 16px;
-  color: white;
-  background: #2563eb;
-  border-radius: 5px;
-  text-decoration: none;
 }
 
 /* Status labels: green, red and amber are used only for statuses. */
 .status {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 2px var(--space-1);
+  border-radius: var(--radius);
   font-size: 0.85rem;
 }
 
 .status-approved {
-  color: #166534;
-  background: #dcfce7;
+  color: var(--status-green-text);
+  background: var(--status-green-bg);
 }
 
 .status-rejected {
-  color: #991b1b;
-  background: #fee2e2;
+  color: var(--status-red-text);
+  background: var(--status-red-bg);
 }
 
 .status-pending {
-  color: #92400e;
-  background: #fef3c7;
+  color: var(--status-amber-text);
+  background: var(--status-amber-bg);
 }
 
 .status-cancelled {
-  color: #374151;
-  background: #e5e7eb;
-}
-
-/* A form field with its label above the input. */
-.field {
-  display: flex;
-  flex: 1 1 180px;
-  flex-direction: column;
-  gap: 6px;
-  font-weight: bold;
-}
-
-.data-form .field input,
-.data-form .field select {
-  flex: none;
-  width: 100%;
+  color: var(--color-text);
+  background: var(--color-border-light);
 }
 
 /* The payslip is a plain bordered box with a small table inside. */
 .payslip {
   max-width: 520px;
-  padding: 24px;
-  background: white;
-  border: 1px solid #d8dee8;
-  border-radius: 4px;
+  margin-bottom: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 }
 
-.payslip table {
-  min-width: 0;
-}
-
-/* Things with this class are left out of the printed page. */
+/* Printing: leave out the sidebar, top bar and buttons (class "no-print"). */
 @media print {
   .no-print {
     display: none;
+  }
+
+  .layout-main {
+    margin-left: 0;
   }
 
   .payslip {
@@ -224,16 +347,31 @@ p {
   }
 }
 
-@media (max-width: 480px) {
-  .welcome-box {
-    padding: 28px 22px;
+/* Small screens: the sidebar becomes a menu across the top of the page. */
+@media (max-width: 768px) {
+  .sidebar {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    width: auto;
+    padding: var(--space-2);
   }
 
-  .auth-box {
-    padding: 28px 22px;
+  .sidebar-title {
+    width: 100%;
+    margin: 0;
   }
 
-  h1 {
-    font-size: 1.6rem;
+  .layout-main {
+    margin-left: 0;
+  }
+
+  .topbar {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .content-page {
+    padding: var(--space-2) 0;
   }
 }

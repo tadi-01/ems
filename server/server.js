@@ -8,6 +8,7 @@ import departmentRoutes from "./routes/departmentRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import leaveRoutes from "./routes/leaveRoutes.js";
 import payrollRoutes from "./routes/payrollRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leaves", leaveRoutes);
 app.use("/api/payroll", payrollRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/api/health", (request, response) => {
   response.json({ message: "Employee Management API is running." });

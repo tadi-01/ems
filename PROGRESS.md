@@ -2,7 +2,7 @@
 
 Single source of truth for the Employee Management System. A new AI or group member must be able to continue from this file alone. Update it after every phase and after any fix. Only one person edits it at a time.
 
-Last updated by: Claude, branch `claude1`, after Phase 6.
+Last updated by: Claude, branch `claude1`, after Phase 7.
 
 ## 1. Project summary
 
@@ -68,6 +68,8 @@ Decisions made after the original instructions (flagged for the group to confirm
 - Leave days are calendar days with the start and end day both counted (weekends and public holidays are not excluded). A request must start and end in the same calendar year.
 - Leave statuses are Pending, Approved, Rejected and Cancelled. An employee can cancel only a Pending request; it stays in history as Cancelled.
 - Payroll (Phase 6): one payslip per employee per month (unique index on employee + month). The server always calculates net salary; a net value sent by the browser is ignored. Basic salary starts from `Employee.salary` but is copied onto the payslip so later salary changes do not rewrite old payslips. Tax is a typed amount, not a percentage (simplest to explain; the group can change this, see Known issues 27). Money has no currency symbol. Only Admin and HR create, change or delete payslips; every user can read only their own.
+- Dashboard (Phase 7): "present today" is the number of attendance records for today (an employee who has checked in, even if already checked out). "On leave today" is the number of employees with Approved leave that covers today. "Monthly payroll" is the sum of net salary on the current month's payslips. Employees per department are counted from the real Employee records; the hand-typed `Department.employeeCount` is not used (see Known issues 4). Only Admin and HR get company totals; other roles see a welcome message. Today and the current month use the server clock in UTC (see Known issues 18).
+- Design (Phase 7): colors, spacing and sizes are CSS variables at the top of `client/src/index.css`. Red is used for status labels and also for error messages so validation errors are easy to see (the group should confirm this is acceptable under the "red only for status labels" rule).
 
 ## 3. Phase status table
 
@@ -79,7 +81,7 @@ Decisions made after the original instructions (flagged for the group to confirm
 | 4 | Attendance | Complete (Not tested) | Claude, branch `claude1` |
 | 5 | Leave | Complete (Not tested) | Claude, branch `claude1` |
 | 6 | Payroll | Complete (Not tested) | Claude, branch `claude1` |
-| 7 | Dashboard and responsive CSS | Not started | |
+| 7 | Dashboard and responsive CSS | Complete (Not tested) | Claude, branch `claude1` |
 | 8 | Deployment and README | Not started | |
 
 "Complete (Not tested)" means the code exists, was read and reviewed, and passed the checks listed on its "Test status" line (syntax checks, a client build, and logic scripts that use an in-memory stand-in for the database). It has NOT been run against a real MongoDB database or clicked through in a browser. Change a phase to "Tested" only after the group has run its "How to test" steps and they pass.
@@ -309,19 +311,60 @@ Lecturer questions:
 - Why copy the basic salary onto the payslip? (A payslip is a record of what was paid that month. If it only pointed to the employee's current salary, a raise would silently change past payslips.)
 - How do you stop two payslips for the same month? (A unique compound index on employee + month. The database enforces it, and the code catches error 11000 and shows a friendly message.)
 
+### Phase 7: dashboard and responsive CSS
+
+Files:
+- `server/utils/dateHelpers.js`: `getTodayText` (YYYY-MM-DD) and `getMonthText` (YYYY-MM); the attendance controller now imports `getTodayText` from here instead of defining its own
+- `server/controllers/dashboardController.js`: `getDashboardSummary`, plus helpers that count employees per department, add up the month's net salary and count employees on leave today
+- `server/routes/dashboardRoutes.js`: dashboard route
+- `server/server.js`: now also mounts `/api/dashboard`
+- `client/src/services/dashboardService.js`: API call for the dashboard
+- `client/src/pages/Dashboard.jsx`: four total cards and an "Employees per department" table (Admin and HR); a welcome message for other roles
+- `client/src/components/Layout.jsx`: the frame for every logged-in page: fixed left sidebar menu, top bar with the user's name, role and Log out, and the page in the content area
+- `client/src/App.jsx`: rewritten as a plain list of routes; logged-in pages are nested inside `ProtectedRoute` and `Layout`; the temporary dashboard function is gone
+- `client/src/index.css`: rewritten with CSS variables, muted navy, no shadows, 4px radius, sidebar layout, cards, solid and outlined buttons, print rules and a small-screen layout
+- `client/src/pages/Payroll.jsx`: one small change (`nowrap` on the month cell)
+
+Route (requires login):
+
+| Method | Path | Access | Response |
+|---|---|---|---|
+| GET | /api/dashboard | Admin, HR | `{ date, month, totalEmployees, presentToday, onLeaveToday, monthlyPayroll, employeesPerDepartment: [{ _id, name, count }] }` |
+
+Database models: none new. It reads `Employee`, `Department`, `Attendance` (`date`), `Leave` (`status`, `startDate`, `endDate`) and `Payroll` (`month`, `netSalary`).
+
+Environment variables: none new.
+
+How to test:
+1. Start the server and client as in Phase 4. Have some employees, departments, an attendance check-in today, an Approved leave covering today, and a payslip for the current month.
+2. Log in as Admin or HR. The Dashboard shows four cards (total employees, present today, on leave today, monthly payroll for this month) and the employees-per-department table. Check each number against the other pages.
+3. Check the left sidebar links open each page and the current page is highlighted. Check the top bar shows your name and role, and Log out returns to the login page.
+4. Log in as an Employee. The Dashboard shows only the welcome message. In Postman, `GET /api/dashboard` with that token returns 403.
+5. Narrow the browser window to phone width (about 390px). The sidebar becomes a menu across the top, the cards stack, and the page has no sideways scrolling (wide tables scroll inside their own box).
+6. Open a payslip and press Print payslip. The print preview shows only the payslip, with no sidebar, top bar or buttons.
+
+Test status: NOT yet run against a real MongoDB or the real API. What was checked: all server files pass `node --check`; the client builds with `vite build`; a script with an in-memory stand-in for the database passed 16 checks (totals, the date and status filters used for "on leave today", the month used for payroll, rounding, a department with no employees shows 0, a database error gives a clear 500); the attendance and payroll scripts still pass after the shared date helper change; and the built client was opened in headless Chromium with a mocked API at 1280px and 390px wide for Admin and Employee roles. That showed no page errors, no horizontal page scroll at 390px, the sidebar and top bar hidden in print mode, and the screens looked consistent. The real Dashboard numbers and the print preview in a normal browser still need to be checked by the group.
+
+How it works: The dashboard page asks `/api/dashboard`, which only Admin and HR can use. The server counts employees with `countDocuments`, counts today's attendance records by their YYYY-MM-DD date text, and finds employees whose Approved leave starts on or before today and ends on or after today. It reads the current month's payslips and adds up their net salary in plain JavaScript instead of an aggregation pipeline, and it counts the employees in each department with a simple loop. The Layout component wraps every logged-in page with a fixed sidebar and a top bar using React Router's `Outlet`. All colors and spacing are CSS variables in one stylesheet, and on small screens a media query turns the sidebar into a menu across the top.
+
+Lecturer questions:
+- Why is the payroll total added up in JavaScript and not with an aggregation pipeline? (A loop over a month's payslips is easy to read and explain, and a course project has few payslips. A pipeline would be faster for very large data.)
+- How does React Router's `Outlet` work here? (`Layout` draws the sidebar and top bar once, and `Outlet` is the slot where the current page appears, so each page does not repeat the menu.)
+- Why use CSS variables? (Each color and spacing value is written once, so changing the primary color or spacing is a one-line change and the whole site stays consistent.)
+
 ## 5. Known issues and bugs
 
-1. SECURITY: `/api/auth/register` accepts `role` from the request, so anyone can register as Admin. Suggested fix: always create `Employee`; let an Admin change roles, or seed the first Admin manually.
+1. SECURITY (left unfixed on purpose; MUST be fixed before deployment in Phase 8): `/api/auth/register` accepts `role` from the request, so anyone can register as Admin and then read and change every record, including salaries and payslips. Suggested fix: always create the user as `Employee`; let an Admin change roles, or create the first Admin by hand in the database.
 2. `registerUser` queries the database before checking that fields exist. Suggested fix: validate first.
 3. Employee search puts user text straight into a regex. Suggested fix: escape special characters before building the regex.
-4. `Department.employeeCount` is typed in by hand and is never calculated. Suggested fix: count employees with `Employee.countDocuments({ department: id })` when listing.
+4. `Department.employeeCount` is typed in by hand and is never calculated. Suggested fix: count employees with `Employee.countDocuments({ department: id })` when listing. The Phase 7 dashboard does not use this field; it counts real Employee records instead.
 5. The department form asks for a raw "Manager user ID". Suggested fix: a dropdown of Admin and HR users (needs a small `GET /api/users` route for Admin and HR).
 6. Departments page has no Edit button (`updateDepartment` exists in the service but is unused).
 7. Employee records are not linked to User accounts. Phases 4 and 5 match by email (`User.email` equals `Employee.email`). Suggested long-term fix: add a `user` reference to `Employee`.
 8. Employees and Departments pages show Add, Edit and Delete controls to the Employee role although the server correctly answers 403. Suggested fix: hide them by role.
 9. API base URL `http://localhost:5000/api` is hardcoded in `client/src/services/api.js` and again in `authService.js`, which creates its own Axios instance. Suggested fix: use `import.meta.env.VITE_API_URL` and make `authService.js` import `api.js`. Needed before Phase 8.
-10. The `Dashboard` component lives inside `client/src/App.jsx` as a temporary welcome page. Phase 7 replaces it.
-11. DESIGN drift in `client/src/index.css`: no sidebar or top bar, bright blue `#2563eb` instead of a muted navy, a `box-shadow` on cards, 8px radius instead of 4px, an uppercase letter-spaced "eyebrow" label, no CSS variables. Suggested fix: one styling pass that adds CSS variables and the sidebar layout.
+10. The `Dashboard` component lives inside `client/src/App.jsx` as a temporary welcome page. Phase 7 replaces it. RESOLVED in Phase 7: it is now `client/src/pages/Dashboard.jsx`.
+11. DESIGN drift in `client/src/index.css`: no sidebar or top bar, bright blue `#2563eb` instead of a muted navy, a `box-shadow` on cards, 8px radius instead of 4px, an uppercase letter-spaced "eyebrow" label, no CSS variables. Suggested fix: one styling pass that adds CSS variables and the sidebar layout. MOSTLY RESOLVED in Phase 7: sidebar, top bar, CSS variables, muted navy, no shadows, 4px radius and plain eyebrow text are done. What remains is issue 32 (labels above inputs).
 12. `client/src/pages/Employees.jsx` is about 207 lines, over the 150 line rule. Suggested fix: move the form into `components/EmployeeForm.jsx`.
 13. `removeEmployee` and `removeDepartment` do not catch errors, so a failed delete shows nothing.
 14. `ProtectedRoute` only checks that a token exists; an expired token is not detected until an API call returns 401, and the client does not then log the user out.
@@ -330,17 +373,21 @@ Lecturer questions:
 17. `README.md` is empty (Phase 8).
 18. Attendance dates use the server clock in UTC (`toISOString`). For Zimbabwe (UTC+2) a check-in between 00:00 and 02:00 local time is recorded against the previous date. Suggested fix: compute the date in the local time zone, or store the time zone in `.env`.
 19. An Admin or HR user can only check in if an Employee record with their email exists; otherwise they get a 404 message. Create an Employee record for them if they should be tracked.
-20. An Admin or HR user can approve their own leave request. Suggested fix: in `reviewLeave`, load the reviewer's Employee with `getEmployeeForUser` and refuse when it matches `leave.employee`.
+20. SECURITY (left unfixed on purpose; fix before the final demo if possible): an Admin or HR user can approve their own leave request. Suggested fix: in `reviewLeave`, load the reviewer's Employee with `getEmployeeForUser` and refuse when it matches `leave.employee`.
 21. Leave days are calendar days, so weekends and public holidays count against the balance. The 21-day allowance is a constant in `leaveHelpers.js`, not a setting. Suggested fix if the lecturer asks: skip Saturdays and Sundays in `countLeaveDays`, and move the allowance to `.env`.
 22. Leave dates use UTC, the same as attendance (see 18).
 23. `client/src/pages/Leave.jsx` and `server/controllers/leaveController.js` are 152 lines each, slightly over the "about 150" rule; `LeaveReview.jsx` was split out to keep the page short.
 24. An Admin or HR user without an Employee record sees the review section but cannot apply for leave (the page says so).
-25. Payroll: the print layout hides only the payslip buttons. When Phase 7 adds a sidebar and top bar, they must also get the `no-print` class (or be hidden in `@media print`) or they will appear on the printed payslip.
+25. Payroll: the print layout hides only the payslip buttons. When Phase 7 adds a sidebar and top bar, they must also get the `no-print` class (or be hidden in `@media print`) or they will appear on the printed payslip. RESOLVED in Phase 7: the sidebar and top bar have the `no-print` class and `.layout-main` loses its left margin when printing.
 26. Payroll: Admin and HR see only the management view, not their own payslips, even if an Employee record with their email exists. Suggested fix: add a "My payslips" table that calls `getMyPayslips` when the user has a matching Employee record.
 27. Payroll: tax is a typed amount. If the lecturer expects a percentage, change `readPayslipAmounts` in `server/utils/payrollHelpers.js` to calculate tax from a rate. The payslip also has no currency symbol, company name or date issued.
 28. Payroll: unpaid leave and absences do not reduce pay automatically. HR types the deductions by hand.
 29. Payroll: `<input type="month">` is not a picker in every browser (for example desktop Firefox); it becomes a text box and the user types `2026-10`. The server rejects other formats with "Month must look like 2026-10."
 30. Payroll: updating a payslip does not record who changed it; `createdBy` stays the original creator.
+31. Dashboard: "present today", "on leave today" and the current month use the UTC date (the same as Known issues 18). For Zimbabwe (UTC+2), the totals between 00:00 and 02:00 local time still refer to the previous day.
+32. DESIGN: the Employees, Departments, Attendance and Leave forms use placeholders instead of labels above the inputs (only Login, Register and the Payroll form follow that rule). Suggested fix: use the `.field` label pattern from `PayrollForm.jsx`; move the Employees form into `components/EmployeeForm.jsx` at the same time (also fixes issue 12).
+33. The sidebar shows every link to every role. Employee users can open Employees and Departments (the server allows reading) and still see the Add, Edit and Delete controls (see issue 8). Suggested fix: hide links and controls by role.
+34. The dashboard was only checked in a browser with a mocked API, not with the real backend and a real MongoDB.
 
 ## 6. Naming conventions and patterns
 
@@ -356,16 +403,19 @@ Lecturer questions:
 - Client: reusable pieces of a page go in `components/` (for example `LeaveReview.jsx`); pages are PascalCase `.jsx` files in `pages/` with a default export; each API area has a `services/<name>Service.js` with named exports using the shared `api` instance; services return `response.data`.
 - Forms keep values in one `form` state object and use a shared `updateField` handler based on the input `name`.
 - Errors shown with `requestError.response?.data?.message`, rendered as `<p className="error">`.
-- CSS lives in `client/src/index.css`; class names are kebab-case (`content-page`, `data-form`, `table-wrap`).
+- CSS lives in `client/src/index.css`; class names are kebab-case (`content-page`, `data-form`, `table-wrap`). Colors, spacing, radius and sidebar width are CSS variables in `:root` (`--color-primary`, `--space-1`, `--radius`, and so on); use these instead of writing new values. Logged-in pages are `<main className="content-page">` placed inside `Layout`; anything that must not print gets `className="no-print"`.
 
 ## 7. Next step
 
-Before Phase 7: the group should run the "How to test" steps for Phases 4, 5 and 6 against a real MongoDB and change those statuses to "Tested" if they pass. Also decide whether to fix Known issues 1 (anyone can register as Admin) and 20 (an Admin or HR user can approve their own leave) first; both are small server changes.
+Before Phase 8: the group should run the "How to test" steps for Phases 4, 5, 6 and 7 against a real MongoDB and change those statuses to "Tested" if they pass (Phases 1 to 3 as well). Known issue 1 (anyone can register as Admin) MUST be fixed before the app goes on the internet in Phase 8.
 
-Phase 7: Dashboard and responsive CSS. Build only this phase, then stop.
-- Server: `controllers/dashboardController.js` and `routes/dashboardRoutes.js`, mounted at `/api/dashboard` in `server/server.js`, for Admin and HR. It returns: total employees (`Employee.countDocuments()`); present today (`Attendance.countDocuments({ date: today })`, using the same `YYYY-MM-DD` text as attendance); on leave today (Approved `Leave` records where `startDate <= today <= endDate`); monthly payroll (the sum of `netSalary` for the current `YYYY-MM` month; read the payslips and add them up in JavaScript instead of an aggregation pipeline); and the number of employees in each department (loop over `Department.find()` and use `Employee.countDocuments({ department: id })`). Keep each file under about 150 lines and explain any maths in comments.
-- Client: replace the temporary `Dashboard` function inside `client/src/App.jsx` with `pages/Dashboard.jsx` showing simple cards for the totals and a plain table for employees per department. Employees (non-Admin, non-HR) should see a simple welcome and links, not company totals.
-- Layout and design (fixes Known issue 11): add `components/Layout.jsx` used with `<Outlet />` inside the protected routes, with a fixed left sidebar (links: Dashboard, Employees, Departments, Attendance, Leave, Payroll), a top bar showing the logged-in name and role with a Log out button, and a content area. Move colors and spacing into CSS variables at the top of `client/src/index.css`, switch the primary color to a muted navy, remove `box-shadow` and the uppercase "eyebrow" style, use a 4px border radius and 1px grey borders, and keep one font stack. Make the sidebar collapse or stack on narrow screens so every page works on a phone (feature 8). Give the sidebar and top bar the `no-print` class (Known issue 25).
-- Depends on: `models/Employee.js`, `models/Department.js`, `models/Attendance.js` (`date` text), `models/Leave.js` (`startDate`, `endDate`, `status`), `models/Payroll.js` (`month`, `netSalary`), `middleware/authMiddleware.js`, `client/src/App.jsx`, `client/src/index.css`, and the existing pages, which each start with `<main className="content-page">` and the login pages that use `<main className="page">`.
-- Follow the Naming conventions above, no emojis, and use only the palette in the DESIGN rules.
-- Phase 8 afterwards: deployment (Vercel, Render, Atlas), a real `README.md`, and moving the hardcoded `http://localhost:5000/api` into `VITE_API_URL` (Known issue 9).
+Phase 8: Deployment and README. Build only this phase, then stop.
+- Fix Known issue 1 first: in `server/controllers/authController.js` always create new users as `Employee`, ignore any `role` sent by the browser, and remove the role dropdown from `client/src/pages/Register.jsx`. Add a way to create the first Admin and let an Admin change roles, for example a small script `server/utils/createAdmin.js` that reads the name, email and password from `.env` (explain every line), or a role-change route for Admin only (`PUT /api/users/:id/role`) with a simple page. Ask the group which they prefer before building.
+- API address (Known issue 9): replace the hardcoded `http://localhost:5000/api` in `client/src/services/api.js` with `import.meta.env.VITE_API_URL`, make `client/src/services/authService.js` import the shared `api` instance instead of creating its own, and add `client/.env.example` with `VITE_API_URL`.
+- CORS: in `server/server.js` allow only the deployed client address from a new `CLIENT_URL` variable in `server/.env.example`, instead of `cors()` for every origin (keep localhost working for development).
+- Vercel (client): root directory `client`, build command `npm run build`, output `dist`, environment variable `VITE_API_URL`; add `client/vercel.json` with a rewrite of every path to `/index.html` so refreshing a page such as `/employees` does not give a 404.
+- Render (server): a Web Service with root directory `server`, build command `npm install`, start command `npm start`, environment variables `MONGO_URI`, `JWT_SECRET` (a long random value, different from the example) and `CLIENT_URL`; `PORT` is set by Render.
+- MongoDB Atlas: create a free cluster and a database user, allow network access from Render, and put the connection string in `MONGO_URI`. The unique indexes (attendance, payroll, employee, email) are created by Mongoose when the server first connects.
+- `README.md` (it is empty now): what the system does, the three roles, the stack, the folder structure, how to run it locally (install, `.env` files, start commands), a table of environment variables (names and what each is for, never real values), a summary of the API routes, deployment steps, and known limitations. No emojis. Update this section and the phase table when done.
+- Depends on: `server/server.js`, `server/.env.example`, `server/controllers/authController.js`, `client/src/pages/Register.jsx`, `client/src/services/api.js`, `client/src/services/authService.js`, and this file for the route list in the README.
+- Follow the Naming conventions above, keep each file under about 150 lines, no emojis.
