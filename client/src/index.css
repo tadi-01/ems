@@ -157,6 +157,34 @@ p {
   text-decoration: none;
 }
 
+/* Status labels: green, red and amber are used only for statuses. */
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.status-approved {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.status-rejected {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.status-pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.status-cancelled {
+  color: #374151;
+  background: #e5e7eb;
+}
+
 @media (max-width: 480px) {
   .welcome-box {
     padding: 28px 22px;

@@ -1,6 +1,5 @@
 import Attendance from "../models/Attendance.js";
-import Employee from "../models/Employee.js";
-import User from "../models/User.js";
+import getEmployeeForUser from "../utils/getEmployeeForUser.js";
 
 // Returns today's date as text (YYYY-MM-DD) so each day has one attendance record.
 // This uses the server clock in UTC, which is fine for a course project.
@@ -8,19 +7,11 @@ function getTodayText() {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Finds the Employee record that belongs to the logged-in user by matching email.
-// The token only holds the user id, so we load the User first to get the email.
-async function getEmployeeForLoggedInUser(request) {
-  const user = await User.findById(request.user.userId);
-  if (!user) return null;
-  return Employee.findOne({ email: user.email });
-}
-
 // Records the check-in time for today. The unique index on employee + date
 // stops a second check-in on the same day.
 async function checkIn(request, response) {
   try {
-    const employee = await getEmployeeForLoggedInUser(request);
+    const employee = await getEmployeeForUser(request);
     if (!employee) {
       response
         .status(404)
@@ -46,7 +37,7 @@ async function checkIn(request, response) {
 // Records the check-out time for today and works out the hours worked.
 async function checkOut(request, response) {
   try {
-    const employee = await getEmployeeForLoggedInUser(request);
+    const employee = await getEmployeeForUser(request);
     if (!employee) {
       response
         .status(404)
@@ -80,7 +71,7 @@ async function checkOut(request, response) {
 // Returns the logged-in employee's own attendance history, newest first.
 async function getMyAttendance(request, response) {
   try {
-    const employee = await getEmployeeForLoggedInUser(request);
+    const employee = await getEmployeeForUser(request);
     if (!employee) {
       response
         .status(404)
