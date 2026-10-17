@@ -1,11 +1,6 @@
 import Attendance from "../models/Attendance.js";
 import getEmployeeForUser from "../utils/getEmployeeForUser.js";
-
-// Returns today's date as text (YYYY-MM-DD) so each day has one attendance record.
-// This uses the server clock in UTC, which is fine for a course project.
-function getTodayText() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { getTodayText } from "../utils/dateHelpers.js";
 
 // Records the check-in time for today. The unique index on employee + date
 // stops a second check-in on the same day.

@@ -106,7 +106,7 @@ function Payroll() {
             {payslips.map((payslip) => (
               <tr key={payslip._id}>
                 {canManage && <td>{payslip.employee?.name}</td>}
-                <td>{payslip.month}</td>
+                <td className="nowrap">{payslip.month}</td>
                 <td>{formatMoney(payslip.basicSalary)}</td>
                 <td>{formatMoney(payslip.allowances)}</td>
                 <td>{formatMoney(payslip.bonuses)}</td>
