@@ -2,7 +2,7 @@
 
 Single source of truth for the Employee Management System. A new AI or group member must be able to continue from this file alone. Update it after every phase and after any fix. Only one person edits it at a time.
 
-Last updated by: Claude, branch `claude1`.
+Last updated by: Claude, branch `claude1`, after Phase 5.
 
 ## 1. Project summary
 
@@ -63,7 +63,10 @@ HOW TO WORK: build in phases, stop after each one so it can be tested. After eac
 
 Decisions made after the original instructions (flagged for the group to confirm):
 - Password hashing uses the `bcryptjs` package (pure JavaScript, same API as `bcrypt`, no native build step).
-- Phase 4 links a logged-in User to an Employee record by matching `User.email` to `Employee.email` (no schema change). See Known issues 7.
+- Phases 4 and 5 link a logged-in User to an Employee record by matching `User.email` to `Employee.email` (no schema change). See Known issues 7.
+- Leave balance is calculated, not stored: each employee has 21 Annual leave days per calendar year (a constant in `server/utils/leaveHelpers.js`); remaining days = 21 minus the days of Approved Annual leave that start in that year. Sick and Unpaid leave do not use the balance.
+- Leave days are calendar days with the start and end day both counted (weekends and public holidays are not excluded). A request must start and end in the same calendar year.
+- Leave statuses are Pending, Approved, Rejected and Cancelled. An employee can cancel only a Pending request; it stays in history as Cancelled.
 
 ## 3. Phase status table
 
@@ -73,7 +76,7 @@ Decisions made after the original instructions (flagged for the group to confirm
 | 2 | Auth: models, routes, JWT middleware, login/register pages | Complete (not formally tested) | Unassigned |
 | 3 | Employees and departments | Complete (not formally tested) | Unassigned |
 | 4 | Attendance | Complete (not formally tested) | Claude, branch `claude1` |
-| 5 | Leave | Not started | |
+| 5 | Leave | Complete (not formally tested) | Claude, branch `claude1` |
 | 6 | Payroll | Not started | |
 | 7 | Dashboard and responsive CSS | Not started | |
 | 8 | Deployment and README | Not started | |
@@ -165,7 +168,7 @@ Lecturer questions: What does `populate` do? (Replaces a stored id with the refe
 
 Files:
 - `server/models/Attendance.js`: Attendance schema with the unique compound index on employee + date
-- `server/controllers/attendanceController.js`: `checkIn`, `checkOut`, `getMyAttendance`, `getAllAttendance`, plus two small helpers (`getTodayText`, `getEmployeeForLoggedInUser`)
+- `server/controllers/attendanceController.js`: `checkIn`, `checkOut`, `getMyAttendance`, `getAllAttendance`, plus a small helper `getTodayText` (the email-matching helper now lives in `server/utils/getEmployeeForUser.js`, moved in Phase 5)
 - `server/routes/attendanceRoutes.js`: attendance routes
 - `server/server.js`: now also mounts `/api/attendance`
 - `client/src/services/attendanceService.js`: API calls for attendance
@@ -204,6 +207,58 @@ Lecturer questions:
 - Why store the date as text like `2026-10-17`? (It makes "one record per day" simple to compare and index, and avoids confusion with times and time zones.)
 - Why can the same helper be trusted to find the employee? (The token holds only the user id, so the server loads the User, then finds the Employee with the same email. It never trusts an employee id sent by the browser.)
 
+### Phase 5: leave
+
+Files:
+- `server/models/Leave.js`: Leave schema
+- `server/utils/leaveHelpers.js`: `ANNUAL_LEAVE_DAYS` (21), `countLeaveDays`, `getYearRange`, `getRemainingAnnualDays`
+- `server/utils/getEmployeeForUser.js`: finds the Employee that matches the logged-in user's email (moved out of `attendanceController.js`; attendance and leave both use it)
+- `server/controllers/leaveController.js`: employee actions `applyForLeave`, `cancelLeave`, `getMyLeaves`
+- `server/controllers/leaveReviewController.js`: Admin and HR actions `getAllLeaves`, `approveLeave`, `rejectLeave`, `getLeaveBalances`
+- `server/routes/leaveRoutes.js`: leave routes; `server/server.js` now mounts `/api/leaves`
+- `server/controllers/attendanceController.js`: now imports the shared helper (no behaviour change)
+- `client/src/services/leaveService.js`: API calls for leave
+- `client/src/pages/Leave.jsx`: apply form, balance line, "My leave history" table with Cancel button
+- `client/src/components/LeaveReview.jsx`: Admin and HR requests table (status filter, Approve, Reject) and the balances table
+- `client/src/index.css`: added `.status` label classes (approved green, rejected red, pending amber, cancelled grey)
+- `client/src/App.jsx`: new `/leave` protected route and a "Leave" button on the temporary dashboard
+
+Routes (all require login):
+
+| Method | Path | Access | Body | Response |
+|---|---|---|---|---|
+| POST | /api/leaves | Any logged in with a matching Employee | leaveType (Annual, Sick, Unpaid), startDate, endDate, reason | 201 the new Pending request; 400 for bad or overlapping dates, a request over the Annual balance, or missing fields; 404 if no matching employee |
+| GET | /api/leaves/me | Same | none | `{ leaves, year, annualAllowance, remainingAnnualDays }`, newest first |
+| PUT | /api/leaves/:id/cancel | Same, own request only | none | the request with status Cancelled; 400 if it is not Pending; 404 if not found or not theirs |
+| GET | /api/leaves?status= | Admin, HR | none | all requests with `employee` populated (name, employeeId); status filter optional |
+| PUT | /api/leaves/:id/approve | Admin, HR | none | the request with status Approved, `reviewedBy`, `reviewedAt`; 400 if not Pending or an Annual request exceeds the days left |
+| PUT | /api/leaves/:id/reject | Admin, HR | none | the request with status Rejected; 400 if not Pending |
+| GET | /api/leaves/balances | Admin, HR | none | `{ year, annualAllowance, balances: [{ employee, usedDays, remainingDays }] }` for the current year |
+
+Model `Leave`: employee (ObjectId ref `Employee`), leaveType (Annual, Sick, Unpaid), startDate, endDate (Dates), days (Number, calculated by the server), reason, status (Pending, Approved, Rejected, Cancelled; default Pending), reviewedBy (ObjectId ref `User`, null until reviewed), reviewedAt (Date, null until reviewed), timestamps.
+
+Environment variables: none new.
+
+How to test (needs the same setup as Phase 4: an Admin or HR user, and an Employee user whose Employee record has the SAME email):
+1. Log in as the employee and open Leave. Expect the line "Annual leave in <year>: 21 of 21 days remaining."
+2. Apply for Annual leave for 3 days. A row appears with an amber Pending label.
+3. Apply again for dates that overlap. Expect "You already have a leave request for these dates."
+4. Apply for Annual leave longer than 21 days. Expect "You only have 21 Annual leave days left this year."
+5. Press Cancel on the Pending row. The label turns grey Cancelled and the Cancel button disappears.
+6. Apply for 3 days again. Log in as HR, open Leave. The request is in "Leave requests" as Pending. Press Approve. It turns green Approved and the balances table shows 3 days used.
+7. Log in as the employee again. The line now says 18 of 21 days remaining.
+8. Apply once more, then as HR press Reject. It turns red Rejected and the balance does not change.
+9. As an Employee, call `GET /api/leaves` in Postman. Expect 403.
+
+Test status: NOT yet run against a real MongoDB. What was checked: all server files pass `node --check`; the client builds with `vite build`; the leave controllers passed 28 checks in a script that used an in-memory stand-in for the database (validation, overlap, balance, cancel rules, approve and reject rules, balances list, 404 and role-independent cases); the attendance script still passes after the helper move. Please run the steps above.
+
+How it works: An employee sends a request and the server counts the calendar days between the dates, including both ends. Before saving, it checks the dates are valid and in one year, that they do not overlap another Pending or Approved request, and, for Annual leave, that the days do not exceed the balance. The balance is never stored: it is 21 minus the days of Approved Annual leave that start in the current year, worked out each time it is needed. Admin or HR then approve or reject, and the server saves the new status, who reviewed it and when; approving checks the balance again. Employees can cancel only while a request is Pending, and every request stays in the history.
+
+Lecturer questions:
+- Why calculate the balance instead of storing a number on the employee? (A stored number can go out of date if a request is edited, cancelled or approved twice. Calculating it from the Approved requests means there is only one source of truth.)
+- How do you stop overlapping requests? (Two ranges overlap when each starts on or before the day the other ends, so the server looks for a Pending or Approved request with startDate <= new end date and endDate >= new start date.)
+- Why check the balance again when approving? (Two Pending requests can each fit alone but not together. Only Approved days count, so the check at approval time is the one that decides.)
+
 ## 5. Known issues and bugs
 
 1. SECURITY: `/api/auth/register` accepts `role` from the request, so anyone can register as Admin. Suggested fix: always create `Employee`; let an Admin change roles, or seed the first Admin manually.
@@ -212,7 +267,7 @@ Lecturer questions:
 4. `Department.employeeCount` is typed in by hand and is never calculated. Suggested fix: count employees with `Employee.countDocuments({ department: id })` when listing.
 5. The department form asks for a raw "Manager user ID". Suggested fix: a dropdown of Admin and HR users (needs a small `GET /api/users` route for Admin and HR).
 6. Departments page has no Edit button (`updateDepartment` exists in the service but is unused).
-7. Employee records are not linked to User accounts. Phase 4 matches by email (`User.email` equals `Employee.email`). Suggested long-term fix: add a `user` reference to `Employee`.
+7. Employee records are not linked to User accounts. Phases 4 and 5 match by email (`User.email` equals `Employee.email`). Suggested long-term fix: add a `user` reference to `Employee`.
 8. Employees and Departments pages show Add, Edit and Delete controls to the Employee role although the server correctly answers 403. Suggested fix: hide them by role.
 9. API base URL `http://localhost:5000/api` is hardcoded in `client/src/services/api.js` and again in `authService.js`, which creates its own Axios instance. Suggested fix: use `import.meta.env.VITE_API_URL` and make `authService.js` import `api.js`. Needed before Phase 8.
 10. The `Dashboard` component lives inside `client/src/App.jsx` as a temporary welcome page. Phase 7 replaces it.
@@ -225,7 +280,11 @@ Lecturer questions:
 17. `README.md` is empty (Phase 8).
 18. Attendance dates use the server clock in UTC (`toISOString`). For Zimbabwe (UTC+2) a check-in between 00:00 and 02:00 local time is recorded against the previous date. Suggested fix: compute the date in the local time zone, or store the time zone in `.env`.
 19. An Admin or HR user can only check in if an Employee record with their email exists; otherwise they get a 404 message. Create an Employee record for them if they should be tracked.
-20. The helper `getEmployeeForLoggedInUser` lives inside `attendanceController.js`. Phase 5 (leave) needs the same logic. Suggested fix: move it to `server/utils/getEmployeeForUser.js` and import it in both controllers.
+20. An Admin or HR user can approve their own leave request. Suggested fix: in `reviewLeave`, load the reviewer's Employee with `getEmployeeForUser` and refuse when it matches `leave.employee`.
+21. Leave days are calendar days, so weekends and public holidays count against the balance. The 21-day allowance is a constant in `leaveHelpers.js`, not a setting. Suggested fix if the lecturer asks: skip Saturdays and Sundays in `countLeaveDays`, and move the allowance to `.env`.
+22. Leave dates use UTC, the same as attendance (see 18).
+23. `client/src/pages/Leave.jsx` and `server/controllers/leaveController.js` are 152 lines each, slightly over the "about 150" rule; `LeaveReview.jsx` was split out to keep the page short.
+24. An Admin or HR user without an Employee record sees the review section but cannot apply for leave (the page says so).
 
 ## 6. Naming conventions and patterns
 
@@ -235,18 +294,22 @@ Lecturer questions:
 - Controllers use `try/catch` and answer with `response.status(code).json({ message })` for errors. Parameters are written in full: `request`, `response`.
 - Routes: `router.use(protectRoute)` first, then `allowRoles("Admin", "HR")` on write routes. Routers are mounted in `server.js` as `/api/<plural-name>`.
 - Models use `{ timestamps: true }` and `ref` + `populate` for relations.
-- Client: pages are PascalCase `.jsx` files in `pages/` with a default export; each API area has a `services/<name>Service.js` with named exports using the shared `api` instance; services return `response.data`.
+- Shared server helpers live in `server/utils/` (`getEmployeeForUser.js` has a default export; `leaveHelpers.js` has named exports). Large controllers are split by audience (`leaveController.js` for employees, `leaveReviewController.js` for Admin and HR).
+- Statuses are plain strings checked with `enum`, and shown in the client as `<span className="status status-<lowercase status>">`.
+- Client: reusable pieces of a page go in `components/` (for example `LeaveReview.jsx`); pages are PascalCase `.jsx` files in `pages/` with a default export; each API area has a `services/<name>Service.js` with named exports using the shared `api` instance; services return `response.data`.
 - Forms keep values in one `form` state object and use a shared `updateField` handler based on the input `name`.
 - Errors shown with `requestError.response?.data?.message`, rendered as `<p className="error">`.
 - CSS lives in `client/src/index.css`; class names are kebab-case (`content-page`, `data-form`, `table-wrap`).
 
 ## 7. Next step
 
-Before Phase 5: the group should run the Phase 4 test steps against a real MongoDB and change the Phase 4 status to "Tested" if they pass. Also decide whether to fix Known issues 1 (anyone can register as Admin) and 11 (design drift) now or in Phase 7.
+Before Phase 6: the group should run the Phase 4 and Phase 5 test steps against a real MongoDB and change those statuses to "Tested" if they pass. Also decide whether to fix Known issues 1 (anyone can register as Admin), 11 (design drift) and 20 (approving your own leave) now or later.
 
-Phase 5: Leave. Build only this phase, then stop.
-- Server: `models/Leave.js` (employee ref `Employee`, leaveType, startDate, endDate, reason, status Pending/Approved/Rejected, reviewedBy ref `User`), plus a leave balance per employee (for example `models/LeaveBalance.js` or a `leaveBalance` number on `Employee`; ask the group which they prefer), `controllers/leaveController.js`, `routes/leaveRoutes.js`, mounted at `/api/leaves` in `server/server.js`.
-- Employee routes: apply, cancel (only while Pending), own history. Admin and HR routes: list all, approve, reject (approval reduces the balance), view balances.
-- Client: `services/leaveService.js` and `pages/Leave.jsx`, a route in `App.jsx`, a dashboard link. Status labels use green (Approved), red (Rejected), amber (Pending) only.
-- Depends on: `models/Employee.js`, `middleware/authMiddleware.js` (`protectRoute`, `allowRoles`), the email-matching helper `getEmployeeForLoggedInUser` in `controllers/attendanceController.js` (move it to a shared util first, see Known issue 20), and `client/src/services/api.js`.
-- Follow the Naming conventions above, keep each file under about 150 lines, no emojis.
+Phase 6: Payroll. Build only this phase, then stop.
+- Rule from the locked decisions: basic + allowances + bonuses - deductions - tax = net salary, with a printable payslip.
+- Server: `models/Payroll.js` (employee ref `Employee`, month as text `YYYY-MM`, basicSalary, allowances, bonuses, deductions, tax, netSalary, createdBy ref `User`, timestamps) with a unique compound index on employee + month so one payslip exists per employee per month (same idea as attendance, explain it). `controllers/payrollController.js` and `routes/payrollRoutes.js`, mounted at `/api/payroll` in `server/server.js`. Admin and HR create or update a payslip (the server calculates `netSalary`; never trust a net value sent by the browser) and list payslips by month. Employees can only list and view their own payslips, found with `getEmployeeForUser` from `server/utils/getEmployeeForUser.js`.
+- Suggested default: start `basicSalary` from `Employee.salary` but store the value on the payslip so later salary changes do not rewrite old payslips. Tax can be a simple percentage or a typed amount; ask the group which they want before building.
+- Client: `services/payrollService.js`, `pages/Payroll.jsx` (Admin and HR form and month list; employee sees own payslips), a printable `components/Payslip.jsx` using a simple print stylesheet (`@media print`) and `window.print()`, a route in `App.jsx`, a dashboard link.
+- Depends on: `models/Employee.js` (`salary`), `middleware/authMiddleware.js` (`protectRoute`, `allowRoles`), `server/utils/getEmployeeForUser.js`, `client/src/services/api.js`, and the `.status` and table styles in `client/src/index.css`.
+- Phase 7 (dashboard) needs the monthly payroll total, so keep a `month` field and a `netSalary` field on every payslip.
+- Follow the Naming conventions above, keep each file under about 150 lines, no emojis, use CSS classes rather than new colors outside the palette.

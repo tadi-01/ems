@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Employees from "./pages/Employees";
 import Departments from "./pages/Departments";
 import Attendance from "./pages/Attendance";
+import Leave from "./pages/Leave";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // Shows the temporary Phase 1 home page while later features are added.
@@ -18,6 +19,7 @@ function App() {
         <Route path="/employees" element={<Employees />} />
         <Route path="/departments" element={<Departments />} />
         <Route path="/attendance" element={<Attendance />} />
+        <Route path="/leave" element={<Leave />} />
       </Route>
     </Routes>
   );
@@ -49,6 +51,9 @@ function Dashboard() {
           </Link>
           <Link className="button" to="/attendance">
             Attendance
+          </Link>
+          <Link className="button" to="/leave">
+            Leave
           </Link>
         </nav>
         <button className="button" onClick={logOut}>
