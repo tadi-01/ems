@@ -1,0 +1,184 @@
+// Carbon Design System global styles.
+// @carbon/react forwards @carbon/styles: this single use statement brings in
+// the CSS reset, IBM Plex fonts (from IBM's Akamai CDN), the grid, the type
+// scale, component styles, and theme CSS custom properties.
+@use '@carbon/react' with (
+  $use-akamai-cdn: true
+);
+
+// Emit CSS custom properties for every theme zone (.cds--white, .cds--g10,
+// .cds--g90, .cds--g100) so `<Theme theme="...">` and zone classes can switch
+// themes at runtime.
+@use '@carbon/react/scss/theme';
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/zone';
+
+// Carbon foundations for custom layout styles: spacing tokens, the type
+// scale mixins, and breakpoint mixins. Never hard-code raw px values.
+@use '@carbon/react/scss/spacing' as spacing;
+@use '@carbon/react/scss/type' as type;
+@use '@carbon/react/scss/breakpoint' as breakpoint;
+
+// Root theme switching: the ThemeProvider toggles .cds--white / .cds--g100 on
+// <html>. The :root.cds--* selectors out-rank the zone classes so the toggle
+// always wins.
+:root,
+:root.cds--white {
+  @include theme.theme(themes.$white);
+}
+
+:root.cds--g100 {
+  @include theme.theme(themes.$g100);
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--cds-background);
+  color: var(--cds-text-primary);
+}
+
+// Offset fixed Carbon UI Shell header.
+.page-main {
+  margin-top: 3rem; // height of .cds--header
+  background: var(--cds-background);
+}
+
+// Hero
+.hero {
+  padding: spacing.$spacing-09 0 spacing.$spacing-10;
+  background: var(--cds-layer-01);
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+
+  @include breakpoint.breakpoint(lg) {
+    padding: spacing.$spacing-12 0 spacing.$spacing-12;
+  }
+}
+
+.hero__title {
+  @include type.type-style('fluid-heading-06', true);
+  margin-top: spacing.$spacing-05;
+}
+
+.hero__subtitle {
+  @include type.type-style('fluid-paragraph-01', true);
+  margin-top: spacing.$spacing-06;
+  max-width: 40rem;
+  color: var(--cds-text-secondary);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-03;
+  margin-top: spacing.$spacing-07;
+}
+
+// Sections
+.section {
+  padding: spacing.$spacing-10 0;
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+}
+
+.section__title {
+  @include type.type-style('heading-05');
+}
+
+.section__subtitle {
+  @include type.type-style('body-02');
+  margin-top: spacing.$spacing-04;
+  margin-bottom: spacing.$spacing-07;
+  max-width: 40rem;
+  color: var(--cds-text-secondary);
+}
+
+// Foundations tiles
+.foundation-tile,
+.showcase-tile {
+  height: 100%;
+  margin-bottom: spacing.$spacing-05;
+}
+
+.foundation-tile__title {
+  @include type.type-style('heading-03');
+  margin-bottom: spacing.$spacing-06;
+}
+
+// Color token swatches
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: spacing.$spacing-05;
+
+  @include breakpoint.breakpoint(md) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: spacing.$spacing-03;
+}
+
+.swatch__chip {
+  display: block;
+  height: spacing.$spacing-09;
+  border: 1px solid var(--cds-border-subtle-01);
+}
+
+.swatch__label {
+  @include type.type-style('code-01');
+  color: var(--cds-text-secondary);
+}
+
+// Type scale list
+.type-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.type-list__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: spacing.$spacing-05;
+  padding: spacing.$spacing-04 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--cds-border-subtle-01);
+  }
+}
+
+.type-list__token {
+  @include type.type-style('code-01');
+  color: var(--cds-text-secondary);
+  white-space: nowrap;
+}
+
+.type-demo--heading-04 {
+  @include type.type-style('heading-04');
+}
+
+.type-demo--heading-03 {
+  @include type.type-style('heading-03');
+}
+
+.type-demo--body-01 {
+  @include type.type-style('body-01');
+}
+
+.type-demo--label-01 {
+  @include type.type-style('label-01');
+}
+
+.type-demo--code-01 {
+  @include type.type-style('code-01');
+}
+
+// Tag row
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: spacing.$spacing-02;
+}
