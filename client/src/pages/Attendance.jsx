@@ -15,6 +15,7 @@ function Attendance() {
   const [myRecords, setMyRecords] = useState([]);
   const [allRecords, setAllRecords] = useState([]);
   const [dateFilter, setDateFilter] = useState("");
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [noEmployee, setNoEmployee] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +48,8 @@ function Attendance() {
 
   // Sends a check-in or check-out request and then refreshes the tables.
   async function recordTime(action, successText) {
+    if (saving) return;
+    setSaving(true);
     setError("");
     setMessage("");
     try {
@@ -56,7 +59,7 @@ function Attendance() {
       if (canSeeAll) await loadAllRecords(dateFilter);
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Request failed.");
-    }
+    } finally { setSaving(false); }
   }
 
   // Filters the all-employees table by the chosen date.
@@ -69,18 +72,19 @@ function Attendance() {
     <main className="content-page">
       <h1>Attendance</h1>
       <p className="page-description">Record your workday and review attendance history.</p>
-      {error && <p className="error">{error}</p>}
-      {message && <p>{message}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      {message && <p className="notice" role="status">{message}</p>}
+      {saving && <p role="status">Saving attendance...</p>}
       {noEmployee && <p>Ask Admin or HR to link your account on the Employees page before recording attendance.</p>}
       <div className="data-form">
         <button
-          className="button" disabled={noEmployee}
+          className="button" disabled={noEmployee || saving}
           onClick={() => recordTime(checkIn, "Checked in.")}
         >
           Check in
         </button>
         <button
-          className="button" disabled={noEmployee}
+          className="button button-secondary" disabled={noEmployee || saving}
           onClick={() => recordTime(checkOut, "Checked out.")}
         >
           Check out

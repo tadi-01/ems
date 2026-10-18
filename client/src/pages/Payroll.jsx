@@ -20,6 +20,8 @@ function Payroll() {
   const [monthFilter, setMonthFilter] = useState("");
   const [editing, setEditing] = useState(null);
   const [viewing, setViewing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   // Loads the payslip list when the page opens.
@@ -33,16 +35,18 @@ function Payroll() {
     const requestNumber = ++latestRequest.current;
     setError("");
     setPayslips([]);
+    setLoading(true);
     try {
       const rows = showMine ? await getMyPayslips() : await getAllPayslips(month);
       if (requestNumber === latestRequest.current) setPayslips(rows);
     } catch (requestError) {
       if (requestNumber === latestRequest.current) setError(requestError.response?.data?.message || "Could not load payslips.");
-    }
+    } finally { if (requestNumber === latestRequest.current) setLoading(false); }
   }
 
   // Runs after the form saves: close edit mode and reload the list.
   function handleSaved() {
+    setNotice("Payslip saved.");
     setEditing(null);
     loadPayslips(monthFilter);
   }
@@ -72,10 +76,11 @@ function Payroll() {
     <main className="content-page">
       <h1>Payroll</h1>
       <p className="page-description">Monthly pay records, clearly organised and ready to view or print.</p>
-      {error && <p className="error">{error}</p>}
-      {canManage && <div className="data-form">
-        <button className="button" onClick={() => { setShowMine(false); setEditing(null); }}>All payslips</button>
-        <button className="button button-secondary" onClick={() => { setShowMine(true); setEditing(null); }}>My payslips</button>
+      {error && <p className="error" role="alert">{error}</p>}
+      {notice && <p className="notice" role="status">{notice}</p>}
+      {canManage && <div className="view-switch" aria-label="Payslip view">
+        <button className={`button ${showMine ? "button-secondary" : ""}`} aria-pressed={!showMine} onClick={() => { setShowMine(false); setEditing(null); }}>All payslips</button>
+        <button className={`button ${showMine ? "" : "button-secondary"}`} aria-pressed={showMine} onClick={() => { setShowMine(true); setEditing(null); }}>My payslips</button>
       </div>}
       <h2>{showMine ? "My payslips" : "All payslips"}</h2>
       {canManage && !showMine && (
@@ -93,7 +98,7 @@ function Payroll() {
           </form>
         </>
       )}
-      <PayrollTable payslips={payslips} showEmployee={canManage} canEdit={canManage && !showMine}
+      <PayrollTable loading={loading} payslips={payslips} showEmployee={canManage} canEdit={canManage && !showMine}
         onView={setViewing} onEdit={setEditing} onDelete={removePayslip} />
     </main>
   );

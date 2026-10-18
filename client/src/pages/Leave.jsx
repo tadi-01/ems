@@ -1,3 +1,4 @@
+import EmptyRow from "../components/EmptyRow";
 import LeaveForm from "../components/LeaveForm";
 import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ function Leave() {
   const [noEmployee, setNoEmployee] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [message, setMessage] = useState("");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   // Loads the leave history when the page opens.
@@ -49,6 +51,8 @@ function Leave() {
   // Sends the leave request, then refreshes the history and the review list.
   async function submitForm(event) {
     event.preventDefault();
+    if (saving) return;
+    setSaving(true);
     setError("");
     setMessage("");
     try {
@@ -59,7 +63,7 @@ function Leave() {
       setRefreshKey(refreshKey + 1);
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not apply for leave.");
-    }
+    } finally { setSaving(false); }
   }
 
   // Cancels a Pending request after a simple confirmation.
@@ -79,8 +83,8 @@ function Leave() {
     <main className="content-page">
       <h1>Leave</h1>
       <p className="page-description">Plan time away, check your balance and follow the progress of each request.</p>
-      {error && <p className="error">{error}</p>}
-      {message && <p>{message}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      {message && <p className="notice" role="status">{message}</p>}
       {noEmployee && (
         <p>
           Ask Admin or HR to link your account on the Employees page before applying for leave.
@@ -93,11 +97,11 @@ function Leave() {
         </p>
       )}
       {!noEmployee && (
-        <LeaveForm form={form} onChange={updateField} onSubmit={submitForm} />
+        <LeaveForm saving={saving} form={form} onChange={updateField} onSubmit={submitForm} />
       )}
 
       <h2>My leave history</h2>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex="0" role="region" aria-label="Scrollable records">
         <table>
           <thead>
             <tr>
@@ -110,7 +114,7 @@ function Leave() {
               <th>Action</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody>{leaves.length === 0 && <EmptyRow columns={7}>No leave requests yet. Your requests and their status will appear here.</EmptyRow>}
             {leaves.map((leave) => (
               <tr key={leave._id}>
                 <td>{leave.leaveType}</td>

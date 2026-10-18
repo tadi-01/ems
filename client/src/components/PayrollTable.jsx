@@ -1,10 +1,11 @@
+import EmptyRow from "./EmptyRow";
 // Shows money with two decimal places.
 function formatMoney(value) { return Number(value).toFixed(2); }
 
 // Shares the same payslip columns between personal and management views.
-function PayrollTable({ payslips, showEmployee, canEdit, onView, onEdit, onDelete }) {
+function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView, onEdit, onDelete }) {
   return (
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex="0" role="region" aria-label="Scrollable records">
         <table>
           <thead>
             <tr>
@@ -19,7 +20,7 @@ function PayrollTable({ payslips, showEmployee, canEdit, onView, onEdit, onDelet
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody>{payslips.length === 0 && <EmptyRow columns={showEmployee ? 9 : 8}>{loading ? "Loading payslips..." : "No payslips to display. Try a different month or check with Admin or HR."}</EmptyRow>}
             {payslips.map((payslip) => (
               <tr key={payslip._id}>
                 {showEmployee && <td>{payslip.employee?.name}</td>}
