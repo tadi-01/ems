@@ -7,6 +7,7 @@ function isValidMonth(month) {
 // An empty value means 0. Returns null when it is not a number or is negative.
 function readAmount(value) {
   if (value === undefined || value === null || value === "") return 0;
+  if (!["number", "string"].includes(typeof value)) return null;
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount < 0) return null;
   return Math.round(amount * 100) / 100;

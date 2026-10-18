@@ -10,7 +10,7 @@ async function checkIn(request, response) {
     if (!employee) {
       response
         .status(404)
-        .json({ message: "No employee record matches your account email." });
+        .json({ message: "Ask Admin or HR to link your account on the Employees page." });
       return;
     }
 
@@ -36,7 +36,7 @@ async function checkOut(request, response) {
     if (!employee) {
       response
         .status(404)
-        .json({ message: "No employee record matches your account email." });
+        .json({ message: "Ask Admin or HR to link your account on the Employees page." });
       return;
     }
 
@@ -70,7 +70,7 @@ async function getMyAttendance(request, response) {
     if (!employee) {
       response
         .status(404)
-        .json({ message: "No employee record matches your account email." });
+        .json({ message: "Ask Admin or HR to link your account on the Employees page." });
       return;
     }
 

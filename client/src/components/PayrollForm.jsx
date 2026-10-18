@@ -1,3 +1,4 @@
+import MonthField from "./MonthField";
 import { useEffect, useState } from "react";
 import { getAllEmployees } from "../services/employeeService";
 import { createPayslip, updatePayslip } from "../services/payrollService";
@@ -105,22 +106,12 @@ function PayrollForm({ editing, onSaved, onCancel }) {
           ))}
         </select>
       </label>
-      <label className="field">
-        Month
-        <input
-          name="month"
-          type="month"
-          value={form.month}
-          onChange={updateField}
-          disabled={Boolean(editing)}
-          required
-        />
-      </label>
+      <MonthField value={form.month} onChange={updateField} disabled={Boolean(editing)} required />
       {amountField("basicSalary", "Basic salary", true)}
       {amountField("allowances", "Allowances", false)}
       {amountField("bonuses", "Bonuses", false)}
-      {amountField("deductions", "Deductions", false)}
-      {amountField("tax", "Tax", false)}
+      {amountField("deductions", "Deductions (including unpaid leave and absences)", false)}
+      {amountField("tax", "Tax amount", false)}
       <button className="button" type="submit">
         {editing ? "Update payslip" : "Create payslip"}
       </button>

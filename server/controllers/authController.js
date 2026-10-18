@@ -17,12 +17,13 @@ function createUserResponse(user) {
 // (server/utils/createAdmin.js), never from the public form.
 async function registerUser(request, response) {
   try {
-    const { name, email, password } = request.body;
+    const { name, password } = request.body;
+    const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
 
-    if (!name || !email || !password) {
+    if (typeof name !== "string" || !name.trim() || !email || typeof password !== "string" || password.length < 6 || Buffer.byteLength(password) > 72) {
       response
         .status(400)
-        .json({ message: "Name, email, and password are required." });
+        .json({ message: "Enter a name, email and password of 6 to 72 bytes." });
       return;
     }
 
@@ -48,14 +49,19 @@ async function registerUser(request, response) {
         token: generateToken(user._id, user.role),
       });
   } catch (error) {
-    response.status(500).json({ message: "Registration failed." });
+    response.status(error.code === 11000 || error.name === "ValidationError" ? 400 : 500).json({ message: "Registration failed. Check your details or use another email." });
   }
 }
 
 // Logs in a user when the email and password match.
 async function loginUser(request, response) {
   try {
-    const { email, password } = request.body;
+    const { password } = request.body;
+    const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
+    if (!email || typeof password !== "string" || !password) {
+      response.status(400).json({ message: "Email and password are required." });
+      return;
+    }
     const user = await User.findOne({ email });
 
     if (!user || !(await user.checkPassword(password))) {

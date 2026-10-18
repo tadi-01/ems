@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import PayrollTable from "../components/PayrollTable";
+import MonthField from "../components/MonthField";
+import { getSavedUser } from "../services/session";
+import { useEffect, useRef, useState } from "react";
 import PayrollForm from "../components/PayrollForm";
 import Payslip from "../components/Payslip";
 import {
@@ -7,15 +10,12 @@ import {
   getMyPayslips,
 } from "../services/payrollService";
 
-// Shows money with 2 decimals, for example 1500 becomes 1500.00.
-function formatMoney(value) {
-  return Number(value).toFixed(2);
-}
-
 // Admin and HR create and manage payslips. Other users see only their own.
 function Payroll() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = getSavedUser();
   const canManage = user?.role === "Admin" || user?.role === "HR";
+  const latestRequest = useRef(0);
+  const [showMine, setShowMine] = useState(!canManage);
   const [payslips, setPayslips] = useState([]);
   const [monthFilter, setMonthFilter] = useState("");
   const [editing, setEditing] = useState(null);
@@ -24,16 +24,20 @@ function Payroll() {
 
   // Loads the payslip list when the page opens.
   useEffect(() => {
-    loadPayslips("");
-  }, []);
+    loadPayslips(showMine ? "" : monthFilter);
+    return () => { latestRequest.current += 1; };
+  }, [showMine]);
 
   // Loads all payslips (Admin or HR, optionally one month) or the user's own.
   async function loadPayslips(month) {
+    const requestNumber = ++latestRequest.current;
     setError("");
+    setPayslips([]);
     try {
-      setPayslips(canManage ? await getAllPayslips(month) : await getMyPayslips());
+      const rows = showMine ? await getMyPayslips() : await getAllPayslips(month);
+      if (requestNumber === latestRequest.current) setPayslips(rows);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Could not load payslips.");
+      if (requestNumber === latestRequest.current) setError(requestError.response?.data?.message || "Could not load payslips.");
     }
   }
 
@@ -68,7 +72,12 @@ function Payroll() {
     <main className="content-page">
       <h1>Payroll</h1>
       {error && <p className="error">{error}</p>}
-      {canManage && (
+      {canManage && <div className="data-form">
+        <button className="button" onClick={() => { setShowMine(false); setEditing(null); }}>All payslips</button>
+        <button className="button button-secondary" onClick={() => { setShowMine(true); setEditing(null); }}>My payslips</button>
+      </div>}
+      <h2>{showMine ? "My payslips" : "All payslips"}</h2>
+      {canManage && !showMine && (
         <>
           <PayrollForm
             editing={editing}
@@ -76,60 +85,15 @@ function Payroll() {
             onCancel={() => setEditing(null)}
           />
           <form className="search-form" onSubmit={filterByMonth}>
-            <input
-              type="month"
-              value={monthFilter}
-              onChange={(event) => setMonthFilter(event.target.value)}
-            />
+            <MonthField value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} />
             <button className="button" type="submit">
               Filter by month
             </button>
           </form>
         </>
       )}
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              {canManage && <th>Employee</th>}
-              <th>Month</th>
-              <th>Basic</th>
-              <th>Allowances</th>
-              <th>Bonuses</th>
-              <th>Deductions</th>
-              <th>Tax</th>
-              <th>Net salary</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payslips.map((payslip) => (
-              <tr key={payslip._id}>
-                {canManage && <td>{payslip.employee?.name}</td>}
-                <td className="nowrap">{payslip.month}</td>
-                <td>{formatMoney(payslip.basicSalary)}</td>
-                <td>{formatMoney(payslip.allowances)}</td>
-                <td>{formatMoney(payslip.bonuses)}</td>
-                <td>{formatMoney(payslip.deductions)}</td>
-                <td>{formatMoney(payslip.tax)}</td>
-                <td>{formatMoney(payslip.netSalary)}</td>
-                <td>
-                  <button onClick={() => setViewing(payslip)}>View</button>
-                  {canManage && (
-                    <>
-                      {" "}
-                      <button onClick={() => setEditing(payslip)}>Edit</button>{" "}
-                      <button onClick={() => removePayslip(payslip._id)}>
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <PayrollTable payslips={payslips} showEmployee={canManage} canEdit={canManage && !showMine}
+        onView={setViewing} onEdit={setEditing} onDelete={removePayslip} />
     </main>
   );
 }

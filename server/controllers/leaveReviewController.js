@@ -1,7 +1,9 @@
+import getEmployeeForUser from "../utils/getEmployeeForUser.js";
 import Employee from "../models/Employee.js";
 import Leave from "../models/Leave.js";
+import { getTodayText } from "../utils/dateHelpers.js";
+import { getLeavePolicy } from "../utils/leavePolicy.js";
 import {
-  ANNUAL_LEAVE_DAYS,
   getRemainingAnnualDays,
   getYearRange,
 } from "../utils/leaveHelpers.js";
@@ -29,6 +31,11 @@ async function reviewLeave(request, response, newStatus) {
       response.status(404).json({ message: "Leave request not found." });
       return;
     }
+    const reviewer = await getEmployeeForUser(request);
+    if (reviewer && String(reviewer._id) === String(leave.employee)) {
+      response.status(403).json({ message: "You cannot review your own leave request." });
+      return;
+    }
     if (leave.status !== "Pending") {
       response
         .status(400)
@@ -49,11 +56,13 @@ async function reviewLeave(request, response, newStatus) {
       }
     }
 
-    leave.status = newStatus;
-    leave.reviewedBy = request.user.userId;
-    leave.reviewedAt = new Date();
-    await leave.save();
-    const savedLeave = await leave.populate("employee", "name employeeId");
+    const savedLeave = await Leave.findOneAndUpdate({ _id: leave._id, status: "Pending" },
+      { status: newStatus, reviewedBy: request.user.userId, reviewedAt: new Date() },
+      { new: true, runValidators: true }).populate("employee", "name employeeId");
+    if (!savedLeave) {
+      response.status(409).json({ message: "This request has already changed. Refresh the list." });
+      return;
+    }
     response.json(savedLeave);
   } catch (error) {
     response.status(400).json({ message: "Could not review leave." });
@@ -75,7 +84,7 @@ function rejectLeave(request, response) {
 // days for each employee in plain JavaScript (no aggregation pipeline).
 async function getLeaveBalances(request, response) {
   try {
-    const year = new Date().getUTCFullYear();
+    const year = Number(getTodayText().slice(0, 4));
     const range = getYearRange(year);
     const employees = await Employee.find().sort({ name: 1 });
     const approvedLeaves = await Leave.find({
@@ -98,10 +107,10 @@ async function getLeaveBalances(request, response) {
           name: employee.name,
         },
         usedDays,
-        remainingDays: ANNUAL_LEAVE_DAYS - usedDays,
+        remainingDays: getLeavePolicy().annualAllowance - usedDays,
       };
     });
-    response.json({ year, annualAllowance: ANNUAL_LEAVE_DAYS, balances });
+    response.json({ year, annualAllowance: getLeavePolicy().annualAllowance, balances });
   } catch (error) {
     response.status(500).json({ message: "Could not load leave balances." });
   }

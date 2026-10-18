@@ -1,3 +1,6 @@
+import EmployeeForm from "../components/EmployeeForm";
+import { getAllUsers } from "../services/userService";
+import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
 import {
   createEmployee,
@@ -15,11 +18,13 @@ const emptyForm = {
   email: "",
   phone: "",
   joiningDate: "",
-  salary: "",
+  salary: "", user: "",
 };
 
 // Displays employee records and provides simple CRUD controls.
 function Employees() {
+  const canManage = ["Admin", "HR"].includes(getSavedUser()?.role);
+  const [users, setUsers] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -37,6 +42,7 @@ function Employees() {
     try {
       setEmployees(await getAllEmployees());
       setDepartments(await getAllDepartments());
+      if (canManage) setUsers(await getAllUsers());
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not load data.");
     }
@@ -50,12 +56,15 @@ function Employees() {
   // Searches employees by their name, ID, or email.
   async function searchEmployees(event) {
     event.preventDefault();
-    setEmployees(await getAllEmployees(search));
+    setError("");
+    try { setEmployees(await getAllEmployees(search)); }
+    catch (requestError) { setError(requestError.response?.data?.message || "Search failed."); }
   }
 
   // Saves a new employee or updates the employee being edited.
   async function submitForm(event) {
     event.preventDefault();
+    setError("");
     try {
       if (editingId) await updateEmployee(editingId, form);
       else await createEmployee({ ...form, salary: Number(form.salary) });
@@ -74,7 +83,7 @@ function Employees() {
     setEditingId(employee._id);
     setForm({
       ...employee,
-      department: employee.department?._id,
+      department: employee.department?._id || "",
       joiningDate: employee.joiningDate.slice(0, 10),
     });
   }
@@ -82,89 +91,24 @@ function Employees() {
   // Deletes an employee after a simple confirmation.
   async function removeEmployee(id) {
     if (!window.confirm("Delete this employee?")) return;
-    await deleteEmployee(id);
-    await loadData();
+    setError("");
+    try { await deleteEmployee(id); await loadData(); }
+    catch (requestError) { setError(requestError.response?.data?.message || "Could not delete employee."); }
   }
 
   return (
     <main className="content-page">
       <h1>Employees</h1>
       {error && <p className="error">{error}</p>}
-      <form className="data-form" onSubmit={submitForm}>
-        <input
-          name="employeeId"
-          placeholder="Employee ID"
-          value={form.employeeId}
-          onChange={updateField}
-          required
-        />
-        <input
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={updateField}
-          required
-        />
-        <select
-          name="department"
-          value={form.department}
-          onChange={updateField}
-          required
-        >
-          <option value="">Department</option>
-          {departments.map((department) => (
-            <option key={department._id} value={department._id}>
-              {department.name}
-            </option>
-          ))}
-        </select>
-        <input
-          name="designation"
-          placeholder="Designation"
-          value={form.designation}
-          onChange={updateField}
-          required
-        />
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={updateField}
-          required
-        />
-        <input
-          name="phone"
-          placeholder="Phone"
-          value={form.phone}
-          onChange={updateField}
-          required
-        />
-        <input
-          name="joiningDate"
-          type="date"
-          value={form.joiningDate}
-          onChange={updateField}
-          required
-        />
-        <input
-          name="salary"
-          type="number"
-          placeholder="Salary"
-          value={form.salary}
-          onChange={updateField}
-          required
-        />
-        <button className="button" type="submit">
-          {editingId ? "Update" : "Add employee"}
-        </button>
-      </form>
+      {canManage && <EmployeeForm form={form} departments={departments} users={users}
+        editingId={editingId} onChange={updateField} onSubmit={submitForm}
+        onCancel={() => { setForm(emptyForm); setEditingId(null); }} />}
       <form className="search-form" onSubmit={searchEmployees}>
-        <input
+        <label className="field">Search name, ID or email<input
           placeholder="Search name, ID, or email"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-        />
+        /></label>
         <button className="button" type="submit">
           Search
         </button>
@@ -178,7 +122,7 @@ function Employees() {
               <th>Department</th>
               <th>Designation</th>
               <th>Email</th>
-              <th>Actions</th>
+              {canManage && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -189,12 +133,12 @@ function Employees() {
                 <td>{employee.department?.name}</td>
                 <td>{employee.designation}</td>
                 <td>{employee.email}</td>
-                <td>
+                {canManage && <td>
                   <button onClick={() => startEditing(employee)}>Edit</button>{" "}
                   <button onClick={() => removeEmployee(employee._id)}>
                     Delete
                   </button>
-                </td>
+                </td>}
               </tr>
             ))}
           </tbody>

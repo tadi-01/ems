@@ -2,7 +2,9 @@
 
 Single source of truth for the Employee Management System. A new AI or group member must be able to continue from this file alone. Update it after every phase and after any fix. Only one person edits it at a time.
 
-Last updated by: Claude, branch `claude1`, after Phase 8.
+Last updated by: Codex, 2026-10-18, known-issue maintenance pass.
+
+The original phase descriptions below are historical. Section 5 records the current disposition of every known issue; the maintenance notes in section 7 and README describe current behavior. No live records or real environment values were changed in this pass.
 
 ## 1. Project summary
 
@@ -394,43 +396,45 @@ Lecturer questions:
 
 ## 5. Known issues and bugs
 
-1. SECURITY (left unfixed on purpose; MUST be fixed before deployment in Phase 8): `/api/auth/register` accepts `role` from the request, so anyone can register as Admin and then read and change every record, including salaries and payslips. Suggested fix: always create the user as `Employee`; let an Admin change roles, or create the first Admin by hand in the database. RESOLVED in Phase 8: register always creates an Employee and the first Admin is made with `npm run create-admin`.
-2. `registerUser` queries the database before checking that fields exist. Suggested fix: validate first. RESOLVED in Phase 8.
-3. Employee search puts user text straight into a regex. Suggested fix: escape special characters before building the regex.
-4. `Department.employeeCount` is typed in by hand and is never calculated. Suggested fix: count employees with `Employee.countDocuments({ department: id })` when listing. The Phase 7 dashboard does not use this field; it counts real Employee records instead.
-5. The department form asks for a raw "Manager user ID". Suggested fix: a dropdown of Admin and HR users (needs a small `GET /api/users` route for Admin and HR).
-6. Departments page has no Edit button (`updateDepartment` exists in the service but is unused).
-7. Employee records are not linked to User accounts. Phases 4 and 5 match by email (`User.email` equals `Employee.email`). Suggested long-term fix: add a `user` reference to `Employee`.
-8. Employees and Departments pages show Add, Edit and Delete controls to the Employee role although the server correctly answers 403. Suggested fix: hide them by role.
-9. API base URL `http://localhost:5000/api` is hardcoded in `client/src/services/api.js` and again in `authService.js`, which creates its own Axios instance. Suggested fix: use `import.meta.env.VITE_API_URL` and make `authService.js` import `api.js`. Needed before Phase 8. RESOLVED in Phase 8.
-10. The `Dashboard` component lives inside `client/src/App.jsx` as a temporary welcome page. Phase 7 replaces it. RESOLVED in Phase 7: it is now `client/src/pages/Dashboard.jsx`.
-11. DESIGN drift in `client/src/index.css`: no sidebar or top bar, bright blue `#2563eb` instead of a muted navy, a `box-shadow` on cards, 8px radius instead of 4px, an uppercase letter-spaced "eyebrow" label, no CSS variables. Suggested fix: one styling pass that adds CSS variables and the sidebar layout. MOSTLY RESOLVED in Phase 7: sidebar, top bar, CSS variables, muted navy, no shadows, 4px radius and plain eyebrow text are done. What remains is issue 32 (labels above inputs).
-12. `client/src/pages/Employees.jsx` is about 207 lines, over the 150 line rule. Suggested fix: move the form into `components/EmployeeForm.jsx`.
-13. `removeEmployee` and `removeDepartment` do not catch errors, so a failed delete shows nothing.
-14. `ProtectedRoute` only checks that a token exists; an expired token is not detected until an API call returns 401, and the client does not then log the user out.
-15. `server/.env.example` has `JWT_SECRET=replace_this_in_phase_2`. Each group member must set their own long random value in a real `.env`.
-16. No automated tests exist, and nothing has been run against a live MongoDB yet.
-17. `README.md` is empty (Phase 8).
-18. Attendance dates use the server clock in UTC (`toISOString`). For Zimbabwe (UTC+2) a check-in between 00:00 and 02:00 local time is recorded against the previous date. Suggested fix: compute the date in the local time zone, or store the time zone in `.env`.
-19. An Admin or HR user can only check in if an Employee record with their email exists; otherwise they get a 404 message. Create an Employee record for them if they should be tracked.
-20. SECURITY (left unfixed on purpose; fix before the final demo if possible): an Admin or HR user can approve their own leave request. Suggested fix: in `reviewLeave`, load the reviewer's Employee with `getEmployeeForUser` and refuse when it matches `leave.employee`.
-21. Leave days are calendar days, so weekends and public holidays count against the balance. The 21-day allowance is a constant in `leaveHelpers.js`, not a setting. Suggested fix if the lecturer asks: skip Saturdays and Sundays in `countLeaveDays`, and move the allowance to `.env`.
-22. Leave dates use UTC, the same as attendance (see 18).
-23. `client/src/pages/Leave.jsx` and `server/controllers/leaveController.js` are 152 lines each, slightly over the "about 150" rule; `LeaveReview.jsx` was split out to keep the page short.
-24. An Admin or HR user without an Employee record sees the review section but cannot apply for leave (the page says so).
-25. Payroll: the print layout hides only the payslip buttons. When Phase 7 adds a sidebar and top bar, they must also get the `no-print` class (or be hidden in `@media print`) or they will appear on the printed payslip. RESOLVED in Phase 7: the sidebar and top bar have the `no-print` class and `.layout-main` loses its left margin when printing.
-26. Payroll: Admin and HR see only the management view, not their own payslips, even if an Employee record with their email exists. Suggested fix: add a "My payslips" table that calls `getMyPayslips` when the user has a matching Employee record.
-27. Payroll: tax is a typed amount. If the lecturer expects a percentage, change `readPayslipAmounts` in `server/utils/payrollHelpers.js` to calculate tax from a rate. The payslip also has no currency symbol, company name or date issued.
-28. Payroll: unpaid leave and absences do not reduce pay automatically. HR types the deductions by hand.
-29. Payroll: `<input type="month">` is not a picker in every browser (for example desktop Firefox); it becomes a text box and the user types `2026-10`. The server rejects other formats with "Month must look like 2026-10."
-30. Payroll: updating a payslip does not record who changed it; `createdBy` stays the original creator.
-31. Dashboard: "present today", "on leave today" and the current month use the UTC date (the same as Known issues 18). For Zimbabwe (UTC+2), the totals between 00:00 and 02:00 local time still refer to the previous day.
-32. DESIGN: the Employees, Departments, Attendance and Leave forms use placeholders instead of labels above the inputs (only Login, Register and the Payroll form follow that rule). Suggested fix: use the `.field` label pattern from `PayrollForm.jsx`; move the Employees form into `components/EmployeeForm.jsx` at the same time (also fixes issue 12).
-33. The sidebar shows every link to every role. Employee users can open Employees and Departments (the server allows reading) and still see the Add, Edit and Delete controls (see issue 8). Suggested fix: hide links and controls by role.
-34. The dashboard was only checked in a browser with a mocked API, not with the real backend and a real MongoDB.
-35. There is no page or route for changing a user's role. Admin and HR have identical permissions, so the workaround is to make people Admins with `npm run create-admin`; the HR role can only be set by editing the user in the database. Suggested fix: an Admin-only `PUT /api/users/:id/role` route and a small Users page (it also gives the Departments form a manager dropdown, Known issues 5).
-36. The app has not been deployed. The README deployment steps have not been followed end to end, and the real Atlas, Render and Vercel screens may use different menu names.
-37. Render's free plan spins the API down after 15 minutes without requests and takes about a minute to wake it, so the first request after a quiet period is slow. It also has no shell, so `npm run create-admin` must be run on a computer that points at the Atlas database. Atlas must allow access from all addresses (0.0.0.0/0) because the free Render plan has no fixed address, so the database password must be strong.
+Current disposition after the 2026-10-18 maintenance pass. Numbers match the original issue list.
+
+1. Resolved previously: public registration always creates Employee accounts; unchanged.
+2. Resolved and strengthened: required fields and credential types are validated before queries; login/registration normalize email.
+3. Resolved: employee searches escape regex punctuation and search literal text.
+4. Resolved: department listings calculate employeeCount from Employee records. The unused stored count is removed from the schema; legacy database fields are ignored, not deleted.
+5. Resolved: the manager dropdown uses safe user details from GET /api/users, limited to Admin and HR. The server validates manager eligibility.
+6. Resolved: Departments supports Edit, Update and Cancel as well as Add and Delete.
+7. Resolved: Employee.user stores a stable account reference with a partial unique index. Admin/HR can select an account in the employee form; unlinked legacy records are matched by email once and linked on first personal use. Existing data was not migrated in bulk.
+8. Resolved: Employee users see read-only employee/department tables; write controls are hidden and server permissions remain enforced.
+9. Resolved previously: all services use the shared configured Axios instance.
+10. Resolved previously: Dashboard is its own page.
+11. Resolved: the existing muted design is retained and remaining fields now use labels above inputs.
+12. Resolved: EmployeeForm is a separate component; Employees is about 150 lines.
+13. Resolved: employee/department delete and search failures display messages. Deletion also refuses to orphan employee history or department assignments.
+14. Resolved: malformed/expired tokens fail the client guard; protected navigation fetches the current user; protected API 401 responses clear login and redirect. The server loads the current role on every request instead of trusting an old JWT role.
+15. Resolved in code/setup guidance: sample or shorter-than-32-character JWT secrets prevent startup. Actual .env secrets were not modified.
+16. Partially verified: automated server and client regression suites now exist with no extra packages. Real MongoDB behavior still needs the isolated-data checklist in docs/VERIFICATION.md. Earlier session startup/admin creation is not full integration coverage.
+17. Resolved previously and updated: README contains setup, routes, configuration and verification guidance.
+18. Resolved: attendance dates use COMPANY_TIME_ZONE, default Africa/Harare, independent of host time zone.
+19. Workflow clarified: Admin/HR who are employees must have a real Employee record linked using the dropdown. The attendance page explains this and disables check-in/out when unlinked; administrative access does not invent a salary or department.
+20. Resolved: a reviewer cannot approve or reject their own leave. Pending state changes are conditional, preventing a review and cancellation from overwriting each other.
+21. Resolved as a configurable policy: user explicitly chose to retain 21 calendar days. ANNUAL_LEAVE_DAYS, LEAVE_DAY_MODE and PUBLIC_HOLIDAYS support optional working-day rules. Invalid settings fail startup; no existing leave totals are rewritten.
+22. Resolved: current leave years use the company time zone. Date-only inputs remain UTC-midnight calendar markers and reject impossible dates or timestamps.
+23. Resolved: LeaveForm and leaveHistoryController are split out, keeping the page/controller near the 150-line convention.
+24. Workflow clarified as in issue 19: link a real employee record; unlinked administrators can still review other employees without being assigned fictional employment details.
+25. Resolved previously: print mode hides navigation and controls.
+26. Resolved: Admin and HR can switch between All payslips and My payslips. Personal view uses the same linked-employee endpoint as Employee accounts; request ordering prevents stale lists after switching.
+27. Resolved/policy retained: tax remains an HR-entered amount by explicit user choice. New payslips snapshot optional COMPANY_NAME and PAYROLL_CURRENCY and show date issued. Historical slips without metadata do not acquire invented values.
+28. Intentional policy retained by explicit user choice: HR enters unpaid leave and absence adjustments in Deductions. The form now labels this clearly; automatic deductions are not enabled without an agreed calculation policy.
+29. Resolved: a shared MonthField uses a labelled YYYY-MM text input with a format pattern, which behaves consistently without a browser-specific month picker.
+30. Resolved: payslip updates store updatedBy and Mongoose updatedAt while keeping createdBy. This records the last editor, not a full revision history.
+31. Resolved: dashboard day and month boundaries use the company time zone.
+32. Resolved: employee, department, attendance, leave, status and payroll filters have visible labels using the existing field CSS pattern.
+33. Resolved: controls match server permissions; the Users link/page is Admin-only. Employee and Department navigation stays available to Employee accounts because read access is a documented requirement.
+34. Outstanding verification: automated checks do not certify live dashboard totals or full browser behavior. Run docs/VERIFICATION.md against disposable test records before demo/deployment.
+35. Resolved: Admin-only PUT /api/users/:id/role and Users page manage roles. Self-role changes are blocked; managers must be reassigned before demotion. GET /api/users supports Admin/HR dropdowns without returning hashes.
+36. Outstanding delivery work: no deployment or cloud configuration changes were requested or performed in this maintenance pass. End-to-end deployment remains a separate operational task.
+37. Hosting property retained: code changes cannot remove free-hosting cold starts or change account networking/plan limits. Verify current provider settings during deployment; no hosting plan was changed.
 
 ## 6. Naming conventions and patterns
 
@@ -448,12 +452,21 @@ Lecturer questions:
 - Errors shown with `requestError.response?.data?.message`, rendered as `<p className="error">`.
 - CSS lives in `client/src/index.css`; class names are kebab-case (`content-page`, `data-form`, `table-wrap`). Colors, spacing, radius and sidebar width are CSS variables in `:root` (`--color-primary`, `--space-1`, `--radius`, and so on); use these instead of writing new values. Logged-in pages are `<main className="content-page">` placed inside `Layout`; anything that must not print gets `className="no-print"`.
 
-## 7. Next step
+## 7. Maintenance pass and next steps (2026-10-18)
 
-All eight phases are built. Nothing has been run against a real MongoDB or deployed, so the work that remains is testing and delivery, not new features.
+Scope: resolve the documented code defects without changing the stack, styling system or simple controller/service structure. The user explicitly retained calendar leave and manually entered payroll adjustments. No new runtime or test dependencies were added; package manifests only gain test scripts, so lockfile dependency entries remain valid.
 
-1. Test everything (most important). The group runs the "How to test" steps for Phases 1 to 8 against a real MongoDB, ideally each phase by a different member, fixes anything that fails, and changes each phase to "Tested" in the status table only when its steps pass. The checks done so far used in-memory stand-ins and a mocked API, not the real database.
-2. Deploy by following "Deploy" in `README.md` (Atlas, then Render, then Vercel, then `CLIENT_URL`, then `npm run create-admin`). Correct the README where a menu name has changed.
-3. Optional fixes, in a sensible order: Known issues 20 (an Admin or HR user can approve their own leave), 35 (role changes), 32 (labels above inputs, and move the Employees form into its own component for issue 12), 8 and 33 (hide controls and links by role), 18 and 31 (time zone), 21 (skip weekends in leave days), 26 (Admin and HR cannot see their own payslips).
-4. Prepare for the presentation. Each member should be able to say the "How it works" paragraph and answer the "Lecturer questions" for the phases they own (all in section 4). Run the handover check from `EMS_AI_PROMPTS.md` before switching AI tools.
-- Follow the Naming conventions above, keep each file under about 150 lines, no emojis.
+Additional fixes from review: both startup and create-admin require an explicit database in MONGO_URI, preventing the earlier accidental default-test database selection. Startup requires a database connection and waits for model indexes. Health returns 503 if the database disconnects. Employee/department writes accept only editable fields and validate references, and deletion preserves dependent records.
+
+How it works: Current account roles are fetched on protected requests, so role changes take effect without waiting for JWT expiry. Employee records keep a unique account reference, with a one-time compatibility path for existing email matches. Date helpers convert the current instant into the configured company calendar date, while leave dates remain date-only values. Leave allowance and day counting are read from validated settings, with the original defaults unchanged. The UI separates reusable forms/tables, hides unauthorized controls, and reports failed actions using the existing error styling.
+
+Lecturer questions:
+- Why read the user's role from the database? A signed token may contain yesterday's role; the database supplies the current permission.
+- Why store Employee.user instead of repeatedly matching email? The account id stays stable when contact information changes; a unique partial index prevents two employees sharing an account.
+- Why keep date-only leave values at UTC midnight? They represent calendar dates, not events; only the current instant needs conversion to the company time zone.
+
+Final automated result: 28 server tests and 4 client tests passed; the production frontend build, server syntax checks, manifest/lockfile dependency comparisons and git diff whitespace check passed.
+
+Verification: server regression tests cover permissions, explicit database selection, employee links/counts, reference deletion guards, date and policy boundaries, leave self-review and conditional state changes, and payroll calculation/audit access. Client tests cover role-dependent rendering and expired/damaged session handling. Run npm test separately in server and client, then npm run build in client; run node --check on server JavaScript. These are automated checks with database stand-ins and server-rendered UI, not live MongoDB or full browser tests.
+
+Next: follow docs/VERIFICATION.md with disposable data, then complete deployment as a separate delivery task. Keep the existing phase rows marked Not tested until their full live acceptance steps pass. Do not delete the accidental database or move existing records without explicitly agreeing which records should be retained.

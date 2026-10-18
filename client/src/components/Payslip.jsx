@@ -14,7 +14,11 @@ function Payslip({ payslip, onClose }) {
   return (
     <main className="content-page">
       <section className="payslip">
+        {payslip.companyName && <h2>{payslip.companyName}</h2>}
         <h1>Payslip</h1>
+        <p>Issued: {payslip.createdAt ? new Date(payslip.createdAt).toLocaleDateString() : "Not recorded"}
+          {payslip.currency && <> | Currency: {payslip.currency}</>}
+        </p>
         <p>
           Employee: {payslip.employee?.name} ({payslip.employee?.employeeId})
           <br />

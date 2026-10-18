@@ -1,3 +1,5 @@
+import AttendanceTable from "../components/AttendanceTable";
+import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
 import {
   checkIn,
@@ -6,19 +8,15 @@ import {
   getMyAttendance,
 } from "../services/attendanceService";
 
-// Turns a saved date-time into a short clock time, or a dash when empty.
-function formatTime(value) {
-  return value ? new Date(value).toLocaleTimeString() : "-";
-}
-
 // Lets an employee check in and out, and lets Admin or HR see everyone's records.
 function Attendance() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = getSavedUser();
   const canSeeAll = user?.role === "Admin" || user?.role === "HR";
   const [myRecords, setMyRecords] = useState([]);
   const [allRecords, setAllRecords] = useState([]);
   const [dateFilter, setDateFilter] = useState("");
   const [message, setMessage] = useState("");
+  const [noEmployee, setNoEmployee] = useState(false);
   const [error, setError] = useState("");
 
   // Loads the attendance tables when the page opens.
@@ -31,8 +29,10 @@ function Attendance() {
   async function loadMyRecords() {
     try {
       setMyRecords(await getMyAttendance());
+      setNoEmployee(false);
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Could not load records.");
+      if (requestError.response?.status === 404) setNoEmployee(true);
+      else setError(requestError.response?.data?.message || "Could not load records.");
     }
   }
 
@@ -70,15 +70,16 @@ function Attendance() {
       <h1>Attendance</h1>
       {error && <p className="error">{error}</p>}
       {message && <p>{message}</p>}
+      {noEmployee && <p>Ask Admin or HR to link your account on the Employees page before recording attendance.</p>}
       <div className="data-form">
         <button
-          className="button"
+          className="button" disabled={noEmployee}
           onClick={() => recordTime(checkIn, "Checked in.")}
         >
           Check in
         </button>
         <button
-          className="button"
+          className="button" disabled={noEmployee}
           onClick={() => recordTime(checkOut, "Checked out.")}
         >
           Check out
@@ -86,68 +87,22 @@ function Attendance() {
       </div>
 
       <h2>My attendance</h2>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Check in</th>
-              <th>Check out</th>
-              <th>Hours worked</th>
-            </tr>
-          </thead>
-          <tbody>
-            {myRecords.map((record) => (
-              <tr key={record._id}>
-                <td>{record.date}</td>
-                <td>{formatTime(record.checkIn)}</td>
-                <td>{formatTime(record.checkOut)}</td>
-                <td>{record.checkOut ? record.workingHours : "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <AttendanceTable records={myRecords} />
 
       {canSeeAll && (
         <>
           <h2>All employees</h2>
           <form className="search-form" onSubmit={filterByDate}>
-            <input
+            <label className="field">Attendance date<input
               type="date"
               value={dateFilter}
               onChange={(event) => setDateFilter(event.target.value)}
-            />
+            /></label>
             <button className="button" type="submit">
               Filter by date
             </button>
           </form>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Date</th>
-                  <th>Check in</th>
-                  <th>Check out</th>
-                  <th>Hours worked</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allRecords.map((record) => (
-                  <tr key={record._id}>
-                    <td>
-                      {record.employee?.employeeId} {record.employee?.name}
-                    </td>
-                    <td>{record.date}</td>
-                    <td>{formatTime(record.checkIn)}</td>
-                    <td>{formatTime(record.checkOut)}</td>
-                    <td>{record.checkOut ? record.workingHours : "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <AttendanceTable records={allRecords} showEmployee />
         </>
       )}
     </main>

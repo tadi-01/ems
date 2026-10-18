@@ -1,3 +1,4 @@
+import { getSavedUser } from "../services/session";
 import { NavLink, Outlet } from "react-router-dom";
 
 const menuLinks = [
@@ -13,7 +14,7 @@ const menuLinks = [
 // bar showing who is logged in, and the current page in the content area.
 // The sidebar and top bar have "no-print" so they are left out of printed payslips.
 function Layout() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = getSavedUser();
 
   // Removes the saved login details from this browser.
   function logOut() {
@@ -26,6 +27,7 @@ function Layout() {
     <div className="layout">
       <nav className="sidebar no-print">
         <p className="sidebar-title">Employee Management</p>
+        {user?.role === "Admin" && <NavLink to="/users" className="sidebar-link">Users</NavLink>}
         {menuLinks.map((link) => (
           <NavLink key={link.to} to={link.to} className="sidebar-link">
             {link.label}

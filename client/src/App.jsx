@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import Users from "./pages/Users";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -26,6 +27,7 @@ function App() {
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/leave" element={<Leave />} />
           <Route path="/payroll" element={<Payroll />} />
+          <Route path="/users" element={<Users />} />
         </Route>
       </Route>
     </Routes>

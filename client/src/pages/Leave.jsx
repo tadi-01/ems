@@ -1,3 +1,5 @@
+import LeaveForm from "../components/LeaveForm";
+import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
 import {
   applyForLeave,
@@ -11,7 +13,7 @@ const emptyForm = { leaveType: "Annual", startDate: "", endDate: "", reason: "" 
 // Lets an employee apply for leave, cancel Pending requests and see their
 // history. Admin and HR also see the review section below.
 function Leave() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = getSavedUser();
   const canReview = user?.role === "Admin" || user?.role === "HR";
   const [leaves, setLeaves] = useState([]);
   const [balance, setBalance] = useState(null);
@@ -80,30 +82,17 @@ function Leave() {
       {message && <p>{message}</p>}
       {noEmployee && (
         <p>
-          Your account email does not match an employee record, so you cannot
-          apply for leave.
+          Ask Admin or HR to link your account on the Employees page before applying for leave.
         </p>
       )}
       {balance && (
         <p>
           Annual leave in {balance.year}: {balance.remainingAnnualDays} of{" "}
-          {balance.annualAllowance} days remaining.
+          {balance.annualAllowance} days remaining ({balance.dayMode || "calendar"} days).
         </p>
       )}
       {!noEmployee && (
-        <form className="data-form" onSubmit={submitForm}>
-          <select name="leaveType" value={form.leaveType} onChange={updateField}>
-            <option>Annual</option>
-            <option>Sick</option>
-            <option>Unpaid</option>
-          </select>
-          <input name="startDate" type="date" value={form.startDate} onChange={updateField} required />
-          <input name="endDate" type="date" value={form.endDate} onChange={updateField} required />
-          <input name="reason" placeholder="Reason" value={form.reason} onChange={updateField} required />
-          <button className="button" type="submit">
-            Apply for leave
-          </button>
-        </form>
+        <LeaveForm form={form} onChange={updateField} onSubmit={submitForm} />
       )}
 
       <h2>My leave history</h2>
@@ -144,7 +133,7 @@ function Leave() {
         </table>
       </div>
 
-      {canReview && <LeaveReview refreshKey={refreshKey} />}
+      {canReview && <LeaveReview refreshKey={refreshKey} onReviewed={loadMyLeaves} />}
     </main>
   );
 }

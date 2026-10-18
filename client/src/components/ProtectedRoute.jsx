@@ -1,10 +1,37 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import api from "../services/api";
+import { clearLogin, hasActiveToken } from "../services/session";
 
-// Sends unauthenticated visitors to login before showing protected pages.
+// Verifies the session on navigation and refreshes roles from the server.
 function ProtectedRoute() {
-  const token = localStorage.getItem("token");
-
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
+  const location = useLocation();
+  const [checkedPath, setCheckedPath] = useState(null);
+  const [error, setError] = useState("");
+  const active = hasActiveToken();
+  useEffect(() => {
+    let cancelled = false;
+    // Loads the current account before rendering pages that depend on its role.
+    async function verifySession() {
+      if (!active) { clearLogin(); return; }
+      setError("");
+      try {
+        const { data } = await api.get("/auth/me");
+        if (!cancelled) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+          setCheckedPath(location.pathname);
+        }
+      } catch {
+        if (!cancelled) setError("Could not verify your session. Refresh to try again.");
+      }
+    }
+    verifySession();
+    return () => { cancelled = true; };
+  }, [location.pathname, active]);
+  if (!active) return <Navigate to="/login" replace />;
+  if (error) return <p className="error">{error}</p>;
+  if (checkedPath !== location.pathname) return <p>Checking session...</p>;
+  return <Outlet />;
 }
 
 export default ProtectedRoute;

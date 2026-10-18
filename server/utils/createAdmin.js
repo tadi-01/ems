@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import User from "../models/User.js";
+import { getDatabaseUrl } from "./databaseSettings.js";
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ async function createAdmin() {
     return;
   }
 
-  await mongoose.connect(MONGO_URI);
+  await mongoose.connect(getDatabaseUrl());
   const email = ADMIN_EMAIL.trim().toLowerCase();
   const existingUser = await User.findOne({ email });
 

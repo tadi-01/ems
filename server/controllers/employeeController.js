@@ -1,9 +1,13 @@
+import { readEmployeeDetails, escapeSearch } from "../utils/employeeDetails.js";
+import Attendance from "../models/Attendance.js";
+import Leave from "../models/Leave.js";
+import Payroll from "../models/Payroll.js";
 import Employee from "../models/Employee.js";
 
 // Returns employees and optionally searches their main text fields.
 async function getAllEmployees(request, response) {
   try {
-    const search = request.query.search || "";
+    const search = escapeSearch(request.query.search || "");
     const searchFilter = search
       ? {
           $or: [
@@ -25,7 +29,7 @@ async function getAllEmployees(request, response) {
 // Creates an employee from the submitted form values.
 async function createEmployee(request, response) {
   try {
-    const employee = await Employee.create(request.body);
+    const employee = await Employee.create(await readEmployeeDetails(request.body));
     const savedEmployee = await employee.populate("department", "name");
     response.status(201).json(savedEmployee);
   } catch (error) {
@@ -38,7 +42,7 @@ async function updateEmployee(request, response) {
   try {
     const employee = await Employee.findByIdAndUpdate(
       request.params.id,
-      request.body,
+      await readEmployeeDetails(request.body),
       {
         new: true,
         runValidators: true,
@@ -57,6 +61,12 @@ async function updateEmployee(request, response) {
 // Deletes one employee using its MongoDB id.
 async function deleteEmployee(request, response) {
   try {
+    for (const Model of [Attendance, Leave, Payroll]) {
+      if (await Model.exists({ employee: request.params.id })) {
+        response.status(400).json({ message: "This employee has attendance, leave or payroll history and cannot be deleted." });
+        return;
+      }
+    }
     const employee = await Employee.findByIdAndDelete(request.params.id);
     if (!employee) {
       response.status(404).json({ message: "Employee not found." });

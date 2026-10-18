@@ -1,3 +1,4 @@
+import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
 import { getDashboardSummary } from "../services/dashboardService";
 
@@ -13,7 +14,7 @@ function SummaryCard({ label, value }) {
 
 // The home page. Admin and HR see company totals; other users see a welcome.
 function Dashboard() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = getSavedUser();
   const canSeeTotals = user?.role === "Admin" || user?.role === "HR";
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState("");

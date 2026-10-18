@@ -17,10 +17,10 @@ A web application for managing a company's employees, departments, attendance, l
 
 | Role | Access |
 |---|---|
-| Admin and HR | The same permissions for both: manage employees, departments and payslips, see everyone's attendance, approve or reject leave, and see the dashboard totals |
+| Admin and HR | Manage employees and departments, review leave and payroll; only Admin can change roles on Users. Shared permissions: manage employees, departments and payslips, see everyone's attendance, approve or reject leave, and see the dashboard totals |
 | Employee | Check in and out, see their own attendance, apply for and cancel leave, see their own payslips, and view the employee and department lists |
 
-An account is linked to an employee record by email. To use attendance, leave and payslips, an Admin or HR user must add an employee whose email is the same as the person's account email.
+An Admin or HR user links an employee to an account using the Linked account dropdown on Employees. The link stays valid if the employee email changes. Existing records without a link are matched by email once on first use, then the account reference is saved. Admin and HR also need a linked employee record to use personal attendance, leave and payslips; administrative access alone does not create an employment record.
 
 ## Technology
 
@@ -34,7 +34,7 @@ An account is linked to an employee record by email. To use attendance, leave an
 
 ## Folder structure
 
-```
+```md
 ems/
   client/                 React app
     src/
@@ -57,43 +57,48 @@ ems/
   PROGRESS.md             Build log, decisions, known issues and test steps
   EMS_AI_PROMPTS.md       The prompts used with the AI assistant
   README.md               This file
+
 ```
 
 ## Run it on your own computer
 
-You need Node.js 18 or newer, and a MongoDB database. The easiest database is a free MongoDB Atlas cluster (see "Deploy" below for how to create one).
+You need Node.js 20 or newer (Node.js 24 is used for local verification), and a MongoDB database. The easiest database is a free MongoDB Atlas cluster (see "Deploy" below for how to create one).
 
 1. Get the code and open a terminal in the project folder.
 2. Set up and start the backend:
 
-```
+```sh
 cd server
 npm install
 cp .env.example .env
+
 ```
 
 (On Windows Command Prompt, use `copy` instead of `cp`.) Open `server/.env` and fill in the values (see the table below). To make a strong `JWT_SECRET`, run this and paste the result:
 
-```
+```html
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
 ```
 
 Then create the first Admin account and start the server:
 
-```
+```sh
 npm run create-admin
 npm run dev
+
 ```
 
 After `create-admin` succeeds, delete the `ADMIN_PASSWORD` line from `server/.env`.
 
 3. In a second terminal, set up and start the frontend:
 
-```
+```sh
 cd client
 npm install
 cp .env.example .env
 npm run dev
+
 ```
 
 4. Open http://localhost:5173 and log in with the Admin email and password you set.
@@ -109,10 +114,15 @@ Backend (`server/.env`):
 | Name | What it is for |
 |---|---|
 | PORT | The port the API listens on. Render sets it for you. Default is 5000. |
-| MONGO_URI | The MongoDB Atlas connection string. |
-| JWT_SECRET | Long random text used to sign login tokens. The server will not start without it. |
+| MONGO_URI | MongoDB connection string with an explicit database name, e.g. `/employee_management` before `?`. Startup and admin setup reject a missing database name. |
+| JWT_SECRET | Random secret of at least 32 characters. Missing, short and example placeholder secrets prevent startup. |
 | CLIENT_URL | The address of the deployed frontend, with no slash at the end. Only this address (and http://localhost:5173) may call the API from a browser. |
 | ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD | Used only by `npm run create-admin` to make the first Admin. |
+| COMPANY_TIME_ZONE | IANA time zone for attendance, leave year and dashboard dates. Default `Africa/Harare`. |
+| ANNUAL_LEAVE_DAYS | Non-negative integer allowance; default `21`. |
+| LEAVE_DAY_MODE | `calendar` (default) or `working` (excludes Saturday, Sunday and configured holidays). |
+| PUBLIC_HOLIDAYS | Comma-separated `YYYY-MM-DD` dates, used only in working mode. No holiday calendar is downloaded automatically. |
+| COMPANY_NAME, PAYROLL_CURRENCY | Optional payslip company heading and currency code, copied onto new payslips. |
 
 Frontend (`client/.env`):
 
@@ -126,10 +136,12 @@ All routes start with `/api`. "Logged in" means any user with a valid login toke
 
 | Method and path | Who can use it | What it does |
 |---|---|---|
-| GET /health | Anyone | Checks that the API is running |
+| GET /health | Anyone | Returns 200 when the API/database are ready, 503 if the database disconnects |
+| GET /users | Admin or HR | Safe account details for dropdowns and role management |
+| PUT /users/:id/role | Admin | Changes another account to Admin, HR or Employee |
 | POST /auth/register | Anyone | Creates an Employee account |
 | POST /auth/login | Anyone | Logs in and returns a token |
-| GET /auth/me | Logged in | Returns the token details |
+| GET /auth/me | Logged in | Returns current account details and role from the database |
 | GET /employees?search= | Logged in | Lists employees, with optional search |
 | POST /employees | Admin or HR | Adds an employee |
 | PUT /employees/:id | Admin or HR | Changes an employee |
@@ -193,15 +205,19 @@ If you change `VITE_API_URL` later, redeploy the frontend, because the value is 
 2. On your own computer, put the Atlas `MONGO_URI` and the `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` values in `server/.env`, then run `npm run create-admin` inside the `server` folder. Delete `ADMIN_PASSWORD` from the file afterwards.
 3. Open your Vercel address and log in as the Admin.
 
-## Known limitations
+## Verification and policy choices
 
-The full list is in `PROGRESS.md` under "Known issues and bugs". The main ones:
+Run `npm test` inside `server` and `client`, then `npm run build` inside `client`. The tests use Node's built-in runner and the existing Vite loader, with no new dependencies. Server tests use database stand-ins; client tests render role-dependent pages and check session handling. They do not replace the live integration and browser checklist in `docs/VERIFICATION.md`.
 
-- There is no page for changing a user's role. Because Admin and HR have the same permissions, the simplest way to give someone management access is to let them register and then run `npm run create-admin` with their email, which makes them an Admin. Making someone HR needs a change in the database.
-- Today's date and the current month use the server's UTC clock, so between 00:00 and 02:00 in Zimbabwe, attendance and the dashboard still refer to the previous day.
-- Leave days are calendar days; weekends and public holidays are not skipped.
-- Tax on a payslip is typed in as an amount, not worked out from a percentage.
-- An Admin or HR user can approve their own leave request.
+- Employee and Department lists remain readable by every logged-in role, as required. Only Admin and HR see editing controls. Users is Admin-only, and the server checks the current role on every protected request.
+- You cannot change your own role. Assign another manager before demoting a department manager to Employee.
+- Leave review cannot approve or reject the reviewer's own request. Pending review/cancellation uses a conditional update so one cannot overwrite the other.
+- Leave remains 21 calendar days by default. Working-day counting and the allowance are configurable. Settings affect new requests; stored leave day totals are not rewritten. Plan allowance changes at the start of a year.
+- Tax remains a manually entered amount. HR includes unpaid leave and absence adjustments in Deductions; automatic tax or absence calculations require an agreed policy and are not enabled. This preserves the project's chosen payroll rules.
+- Admin and HR can switch between All payslips and My payslips. Edits record `updatedBy` and `updatedAt`; old slips retain their original amounts and creator. The audit fields record the latest editor, not a full revision history.
+- A department with employees cannot be deleted. An employee with attendance, leave or payroll history cannot be deleted, to preserve those records.
+- The API requires a real database and waits for model indexes before listening. No migration, live-data deletion, deployment or hosting-plan change was performed by this maintenance pass.
+- Live MongoDB index/concurrency checks, full browser flows and deployment remain to be verified. Free hosting availability is an operational property, not an application defect.
 
 ## Project notes
 
