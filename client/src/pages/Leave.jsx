@@ -78,6 +78,7 @@ function Leave() {
   return (
     <main className="content-page">
       <h1>Leave</h1>
+      <p className="page-description">Plan time away, check your balance and follow the progress of each request.</p>
       {error && <p className="error">{error}</p>}
       {message && <p>{message}</p>}
       {noEmployee && (

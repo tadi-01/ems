@@ -68,6 +68,7 @@ function Attendance() {
   return (
     <main className="content-page">
       <h1>Attendance</h1>
+      <p className="page-description">Record your workday and review attendance history.</p>
       {error && <p className="error">{error}</p>}
       {message && <p>{message}</p>}
       {noEmployee && <p>Ask Admin or HR to link your account on the Employees page before recording attendance.</p>}

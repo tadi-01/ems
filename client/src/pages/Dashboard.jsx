@@ -1,3 +1,4 @@
+import DepartmentOverview from "../components/DepartmentOverview";
 import QuickActions from "../components/QuickActions";
 import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
@@ -39,7 +40,7 @@ function Dashboard() {
     <main className="content-page">
       <div className="page-heading"><div>
         <p className="section-label">Your workspace at a glance</p>
-        <h1>Welcome, {user?.name?.split(" ")[0] || "there"}.</h1>
+        <h1>Welcome, <em>{user?.name?.split(" ")[0] || "there"}.</em></h1>
         <p className="page-description">{canSeeTotals ? "Here is an overview of your people, time and payroll." : "Everything you need for your workday, in one place."}</p>
       </div><span className="role-label">{canSeeTotals ? "Team overview" : "Employee overview"}</span></div>
       {error && <p className="error" role="alert">{error}</p>}
@@ -55,30 +56,25 @@ function Dashboard() {
               value={Number(summary.monthlyPayroll).toFixed(2)}
             />
           </div>
-          <div className="section-heading"><div><h2>Department overview</h2><p>How your team is distributed.</p></div><span className="count-label">{summary.employeesPerDepartment.length} departments</span></div>
-          <div className="table-wrap">
-            <table className="narrow-table">
-              <thead>
-                <tr>
-                  <th>Department</th>
-                  <th>Employees</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.employeesPerDepartment.length === 0 && <tr><td colSpan="2" className="empty-state">No departments yet. Add a department to start organising your team.</td></tr>}
-                {summary.employeesPerDepartment.map((department) => (
-                  <tr key={department._id}>
-                    <td>{department.name}</td>
-                    <td>{department.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </>
       )}
-      <div className="section-heading"><h2>{canSeeTotals ? "Manage your workspace" : "Start your day"}</h2></div>
-      <QuickActions canManage={canSeeTotals} />
+      <div className="dashboard-columns">
+        {canSeeTotals ? <DepartmentOverview summary={summary} /> : <section className="employee-welcome">
+          <p className="section-label">Your daily essentials</p>
+          <h2>A little clarity for <em>every workday.</em></h2>
+          <p>Record your attendance, plan time away and find your payslips. Your personal records are always available from the workspace menu.</p>
+          <p>Choose a task to get started.</p>
+        </section>}
+        <aside className="dashboard-support" aria-label="Workspace tasks">
+          <div className="section-heading"><div><p className="section-label">Next steps</p>
+            <h2>{canSeeTotals ? "Manage your workspace" : "Start your day"}</h2>
+          </div></div>
+          <QuickActions canManage={canSeeTotals} />
+          <div className="support-note"><p className="section-label">A useful reminder</p>
+            <p>{canSeeTotals ? "Keep employee accounts linked to their records so attendance, leave and payslips stay connected." : "Missing a personal record? Ask Admin or HR to check that your account is linked to your employee profile."}</p>
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }

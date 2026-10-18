@@ -99,6 +99,7 @@ function Employees() {
   return (
     <main className="content-page">
       <h1>Employees</h1>
+      <p className="page-description">Your team directory. Find people and keep their employment details up to date.</p>
       {error && <p className="error">{error}</p>}
       {canManage && <EmployeeForm form={form} departments={departments} users={users}
         editingId={editingId} onChange={updateField} onSubmit={submitForm}

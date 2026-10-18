@@ -71,6 +71,7 @@ function Payroll() {
   return (
     <main className="content-page">
       <h1>Payroll</h1>
+      <p className="page-description">Monthly pay records, clearly organised and ready to view or print.</p>
       {error && <p className="error">{error}</p>}
       {canManage && <div className="data-form">
         <button className="button" onClick={() => { setShowMine(false); setEditing(null); }}>All payslips</button>
