@@ -5,7 +5,7 @@ function AuthLayout({ children }) {
       <div className="brand"><span className="brand-mark">EM</span><span>Employee<br />Management</span></div>
       <div className="auth-story">
         <p className="section-label">Your people. One workspace.</p>
-        <h1>A simpler way to<br />manage the workday.</h1>
+        <h1>A simpler way to<br /><em>manage the workday.</em></h1>
         <p>Keep your team, time off and payroll organised, with the information you need in one place.</p>
         <div className="auth-features">
           <div><span>01</span><p><strong>People & departments</strong><br />A clear view of your organisation.</p></div>

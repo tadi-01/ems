@@ -478,3 +478,14 @@ Refined the existing plain-CSS interface without adding libraries, fonts, gradie
 
 Files: client/src/index.css, components/AuthLayout.jsx, components/Layout.jsx, components/QuickActions.jsx, pages/Login.jsx, pages/Register.jsx and pages/Dashboard.jsx. No backend, deployment settings or database records changed. Verify with the existing client tests and production build; browser visual review is still required because no connected browser is available in this session.
 `npm test` in client: all 4 existing regression tests passed. `npm run build`: passed. `git diff --check`: passed. Visual browser verification remains pending.
+
+
+## 9. Editorial visual direction (2026-10-18)
+
+The user's new visual brief supersedes the original navy-only, single-font, four-pixel-radius and no-transition design rules. The interface now uses paper #F5F2EB, off-white #FCFBF7, charcoal #282C27, secondary #65695F, terracotta #A33D27 and dividers #CEC9BD. Pale sage supports quiet information. Local Georgia serif headings, Arial body text and Courier metadata require no downloads or packages. Two-pixel corners, thin table rules, compact controls and 150ms colour transitions replace the earlier card-heavy styling; reduced-motion preferences disable transitions.
+
+Presentation only: DepartmentOverview extracts existing table markup, and the dashboard arranges the same data beside task links. Static page descriptions clarify purpose. Existing API requests, state, roles, validation, calculations and mutation handlers are unchanged. Forms retain their values on errors, existing submission feedback and destructive confirmations remain, and keyboard focus, 44px touch targets and print exclusions are preserved. No undo action was invented for server operations that do not support undo. No deployment or backend work is included.
+
+Verification: run the existing frontend regression tests, production build and git diff whitespace check. Visual browser review remains pending because no browser is connected in this session.
+
+Editorial verification result: all four existing frontend regression tests and the production build passed; git diff --check passed. Primary text, secondary text, primary button text and accent-on-sage contrast exceed 4.5:1. No live deployment or browser visual review was performed.

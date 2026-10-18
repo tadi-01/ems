@@ -27,6 +27,7 @@ function Users() {
   return (
     <main className="content-page">
       <h1>Users</h1>
+      <p className="page-description">Manage account access and assign the right role to each person.</p>
       <p>Assign Admin, HR or Employee access. You cannot change your own role.</p>
       {error && <p className="error">{error}</p>}
       <div className="table-wrap"><table>

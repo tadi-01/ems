@@ -48,6 +48,7 @@ function Departments() {
   }
   return <main className="content-page">
     <h1>Departments</h1>
+      <p className="page-description">The structure behind your team. View departments, managers and employee counts.</p>
     {error && <p className="error">{error}</p>}
     {canManage && <form className="data-form" onSubmit={submitForm}>
       <label className="field">Department name
