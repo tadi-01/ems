@@ -11,11 +11,13 @@ function createUserResponse(user) {
   };
 }
 
-// Registers a user after checking the required fields and email uniqueness.
+// Registers a new user after checking the required fields and email uniqueness.
+// Everyone who registers here becomes an Employee, and any role sent by the
+// browser is ignored. An Admin is made with the setup script
+// (server/utils/createAdmin.js), never from the public form.
 async function registerUser(request, response) {
   try {
-    const { name, email, password, role } = request.body;
-    const existingUser = await User.findOne({ email });
+    const { name, email, password } = request.body;
 
     if (!name || !email || !password) {
       response
@@ -24,6 +26,8 @@ async function registerUser(request, response) {
       return;
     }
 
+    const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       response
         .status(400)
@@ -31,7 +35,12 @@ async function registerUser(request, response) {
       return;
     }
 
-    const user = await User.create({ name, email, password, role });
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role: "Employee",
+    });
     response
       .status(201)
       .json({

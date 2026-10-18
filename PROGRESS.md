@@ -2,7 +2,7 @@
 
 Single source of truth for the Employee Management System. A new AI or group member must be able to continue from this file alone. Update it after every phase and after any fix. Only one person edits it at a time.
 
-Last updated by: Claude, branch `claude1`, after Phase 7.
+Last updated by: Claude, branch `claude1`, after Phase 8.
 
 ## 1. Project summary
 
@@ -70,6 +70,7 @@ Decisions made after the original instructions (flagged for the group to confirm
 - Payroll (Phase 6): one payslip per employee per month (unique index on employee + month). The server always calculates net salary; a net value sent by the browser is ignored. Basic salary starts from `Employee.salary` but is copied onto the payslip so later salary changes do not rewrite old payslips. Tax is a typed amount, not a percentage (simplest to explain; the group can change this, see Known issues 27). Money has no currency symbol. Only Admin and HR create, change or delete payslips; every user can read only their own.
 - Dashboard (Phase 7): "present today" is the number of attendance records for today (an employee who has checked in, even if already checked out). "On leave today" is the number of employees with Approved leave that covers today. "Monthly payroll" is the sum of net salary on the current month's payslips. Employees per department are counted from the real Employee records; the hand-typed `Department.employeeCount` is not used (see Known issues 4). Only Admin and HR get company totals; other roles see a welcome message. Today and the current month use the server clock in UTC (see Known issues 18).
 - Design (Phase 7): colors, spacing and sizes are CSS variables at the top of `client/src/index.css`. Red is used for status labels and also for error messages so validation errors are easy to see (the group should confirm this is acceptable under the "red only for status labels" rule).
+- Security and deployment (Phase 8): everyone who uses the Register page becomes an Employee and any role sent by the browser is ignored. The first Admin is made with a setup script (`npm run create-admin`, reading `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env`); running it for a registered person's email makes that person an Admin. The group did not choose between this script and an Admin-only page for changing roles, so the simpler script was used (see Known issues 35). CORS only allows `CLIENT_URL` and `http://localhost:5173`. The server refuses to start without `JWT_SECRET`. The API address comes from `VITE_API_URL` at build time. The app has NOT been deployed yet; the group follows the README.
 
 ## 3. Phase status table
 
@@ -82,7 +83,7 @@ Decisions made after the original instructions (flagged for the group to confirm
 | 5 | Leave | Complete (Not tested) | Claude, branch `claude1` |
 | 6 | Payroll | Complete (Not tested) | Claude, branch `claude1` |
 | 7 | Dashboard and responsive CSS | Complete (Not tested) | Claude, branch `claude1` |
-| 8 | Deployment and README | Not started | |
+| 8 | Deployment and README | Complete (Not tested) | Claude, branch `claude1` |
 
 "Complete (Not tested)" means the code exists, was read and reviewed, and passed the checks listed on its "Test status" line (syntax checks, a client build, and logic scripts that use an in-memory stand-in for the database). It has NOT been run against a real MongoDB database or clicked through in a browser. Change a phase to "Tested" only after the group has run its "How to test" steps and they pass.
 
@@ -352,17 +353,56 @@ Lecturer questions:
 - How does React Router's `Outlet` work here? (`Layout` draws the sidebar and top bar once, and `Outlet` is the slot where the current page appears, so each page does not repeat the menu.)
 - Why use CSS variables? (Each color and spacing value is written once, so changing the primary color or spacing is a one-line change and the whole site stays consistent.)
 
+### Phase 8: deployment and README
+
+Files:
+- `server/controllers/authController.js`: `registerUser` now always creates an `Employee` and ignores any `role` in the request; it also checks the required fields before asking the database (fixes Known issues 2)
+- `client/src/pages/Register.jsx`: the Role dropdown is removed
+- `server/utils/createAdmin.js`: one-off script that creates the first Admin, or makes an existing user an Admin; run with `npm run create-admin`
+- `server/package.json`: new `create-admin` script
+- `server/.env.example`: every variable now has a comment; new `CLIENT_URL`, `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- `server/server.js`: CORS limited to `CLIENT_URL` and `http://localhost:5173`; the server exits with a clear message if `JWT_SECRET` is missing
+- `client/src/services/api.js`: base URL is `import.meta.env.VITE_API_URL`, falling back to `http://localhost:5000/api` for development
+- `client/src/services/authService.js`: now uses the shared `api` instance instead of creating its own (fixes Known issues 9)
+- `client/.env.example`: example `VITE_API_URL`
+- `client/vercel.json`: rewrites every path to `/index.html` so refreshing a page such as `/employees` works on Vercel
+- `README.md`: overview, roles, stack, folder structure, local setup, environment variable tables, API route table, deployment steps for Atlas, Render and Vercel, and known limitations
+
+API routes: none added. `POST /api/auth/register` now always returns `role: "Employee"`.
+
+Database models: none changed.
+
+Environment variables (names only): server `PORT`, `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL`, and for the script only `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`; client `VITE_API_URL`.
+
+How to test:
+1. Backend: `cd server`, `npm install`, copy `.env.example` to `.env` and fill it in (Windows Command Prompt uses `copy`), then run `npm run create-admin`. Expect "Admin account created for <email>."
+2. Start the server (`npm run dev`) and client (`npm run dev` in `client`, with a `client/.env` copied from the example). Log in as that Admin. The Dashboard shows the company totals.
+3. Register a new user on the Register page: there is no Role dropdown, and after logging in that user is an Employee (the top bar says Employee and the Dashboard shows only the welcome message).
+4. In Postman, `POST /api/auth/register` with `"role": "Admin"` in the body. The response must still say `"role": "Employee"`.
+5. Register a person, then run `npm run create-admin` with that person's email in `ADMIN_EMAIL`. Expect "already existed and is now an Admin." and the person can then see the company totals.
+6. Remove `JWT_SECRET` from `.env` and start the server. Expect "JWT_SECRET is not set" and the server stops.
+7. Deployment: follow "Deploy" in the README. Open `<render address>/api/health` and expect the running message. Open the Vercel address, log in, then refresh on `/employees` (no 404). Browser developer tools show no CORS error. As a negative test, set `CLIENT_URL` to a wrong address and confirm the browser blocks calls with a CORS error, then put the correct address back.
+
+Test status: NOT deployed and NOT run against a real MongoDB. What was checked: all server files pass `node --check`; a script with an in-memory stand-in for the database passed 13 checks (register ignores a role sent by the browser, fields are checked before the database, duplicate email gives 400, the Admin script refuses to run with missing settings, creates a new Admin with a trimmed lowercase email, promotes an existing user without creating a second account, and reports database errors with exit code 1); the real server was started and answered CORS requests correctly (the `CLIENT_URL` address with or without a trailing slash and `http://localhost:5173` are allowed, another address gets no CORS header) and exited with a clear message when `JWT_SECRET` was missing; the README's secret-generating command works; the client builds, and the built bundle contains the `VITE_API_URL` address when it is set and `http://localhost:5000/api` when it is not. The Render, Atlas and Vercel steps in the README were written from current documentation for Render's free plan and from general knowledge of the other two; the group should follow them once and correct the README if a menu name has changed.
+
+How it works: The Register route no longer reads a role from the request, so the server always saves new users as Employees, and the only way to get an Admin is to run a script on a computer that already knows the database password. The script reads its settings from `.env`, connects with Mongoose, then either creates an Admin (the User model hashes the password) or changes the role of an existing user. The React app reads the API address from `VITE_API_URL` when Vite builds it, so the same code can talk to the local server or the Render server. The server's CORS setting lists the allowed website addresses, so a browser refuses to let any other website call the API. Vercel's `vercel.json` sends every path to `index.html` so React Router can show the right page after a refresh.
+
+Lecturer questions:
+- Why can't someone register as an Admin? (The server ignores the role in the request and always creates an Employee. If the browser could choose its own role, anyone could give themselves full access. The first Admin is made with a script that needs the database password.)
+- What is CORS and why did you set it? (Browsers stop a website from calling an API on another address unless the API allows it. We allow only our own frontend address, so other websites cannot use a visitor's browser to call our API.)
+- Why is the API address an environment variable and not written in the code? (The address is different on a developer's computer and on Render, and keeping it outside the code means the same code works in both places and no secret or address is hard-coded.)
+
 ## 5. Known issues and bugs
 
-1. SECURITY (left unfixed on purpose; MUST be fixed before deployment in Phase 8): `/api/auth/register` accepts `role` from the request, so anyone can register as Admin and then read and change every record, including salaries and payslips. Suggested fix: always create the user as `Employee`; let an Admin change roles, or create the first Admin by hand in the database.
-2. `registerUser` queries the database before checking that fields exist. Suggested fix: validate first.
+1. SECURITY (left unfixed on purpose; MUST be fixed before deployment in Phase 8): `/api/auth/register` accepts `role` from the request, so anyone can register as Admin and then read and change every record, including salaries and payslips. Suggested fix: always create the user as `Employee`; let an Admin change roles, or create the first Admin by hand in the database. RESOLVED in Phase 8: register always creates an Employee and the first Admin is made with `npm run create-admin`.
+2. `registerUser` queries the database before checking that fields exist. Suggested fix: validate first. RESOLVED in Phase 8.
 3. Employee search puts user text straight into a regex. Suggested fix: escape special characters before building the regex.
 4. `Department.employeeCount` is typed in by hand and is never calculated. Suggested fix: count employees with `Employee.countDocuments({ department: id })` when listing. The Phase 7 dashboard does not use this field; it counts real Employee records instead.
 5. The department form asks for a raw "Manager user ID". Suggested fix: a dropdown of Admin and HR users (needs a small `GET /api/users` route for Admin and HR).
 6. Departments page has no Edit button (`updateDepartment` exists in the service but is unused).
 7. Employee records are not linked to User accounts. Phases 4 and 5 match by email (`User.email` equals `Employee.email`). Suggested long-term fix: add a `user` reference to `Employee`.
 8. Employees and Departments pages show Add, Edit and Delete controls to the Employee role although the server correctly answers 403. Suggested fix: hide them by role.
-9. API base URL `http://localhost:5000/api` is hardcoded in `client/src/services/api.js` and again in `authService.js`, which creates its own Axios instance. Suggested fix: use `import.meta.env.VITE_API_URL` and make `authService.js` import `api.js`. Needed before Phase 8.
+9. API base URL `http://localhost:5000/api` is hardcoded in `client/src/services/api.js` and again in `authService.js`, which creates its own Axios instance. Suggested fix: use `import.meta.env.VITE_API_URL` and make `authService.js` import `api.js`. Needed before Phase 8. RESOLVED in Phase 8.
 10. The `Dashboard` component lives inside `client/src/App.jsx` as a temporary welcome page. Phase 7 replaces it. RESOLVED in Phase 7: it is now `client/src/pages/Dashboard.jsx`.
 11. DESIGN drift in `client/src/index.css`: no sidebar or top bar, bright blue `#2563eb` instead of a muted navy, a `box-shadow` on cards, 8px radius instead of 4px, an uppercase letter-spaced "eyebrow" label, no CSS variables. Suggested fix: one styling pass that adds CSS variables and the sidebar layout. MOSTLY RESOLVED in Phase 7: sidebar, top bar, CSS variables, muted navy, no shadows, 4px radius and plain eyebrow text are done. What remains is issue 32 (labels above inputs).
 12. `client/src/pages/Employees.jsx` is about 207 lines, over the 150 line rule. Suggested fix: move the form into `components/EmployeeForm.jsx`.
@@ -388,6 +428,9 @@ Lecturer questions:
 32. DESIGN: the Employees, Departments, Attendance and Leave forms use placeholders instead of labels above the inputs (only Login, Register and the Payroll form follow that rule). Suggested fix: use the `.field` label pattern from `PayrollForm.jsx`; move the Employees form into `components/EmployeeForm.jsx` at the same time (also fixes issue 12).
 33. The sidebar shows every link to every role. Employee users can open Employees and Departments (the server allows reading) and still see the Add, Edit and Delete controls (see issue 8). Suggested fix: hide links and controls by role.
 34. The dashboard was only checked in a browser with a mocked API, not with the real backend and a real MongoDB.
+35. There is no page or route for changing a user's role. Admin and HR have identical permissions, so the workaround is to make people Admins with `npm run create-admin`; the HR role can only be set by editing the user in the database. Suggested fix: an Admin-only `PUT /api/users/:id/role` route and a small Users page (it also gives the Departments form a manager dropdown, Known issues 5).
+36. The app has not been deployed. The README deployment steps have not been followed end to end, and the real Atlas, Render and Vercel screens may use different menu names.
+37. Render's free plan spins the API down after 15 minutes without requests and takes about a minute to wake it, so the first request after a quiet period is slow. It also has no shell, so `npm run create-admin` must be run on a computer that points at the Atlas database. Atlas must allow access from all addresses (0.0.0.0/0) because the free Render plan has no fixed address, so the database password must be strong.
 
 ## 6. Naming conventions and patterns
 
@@ -407,15 +450,10 @@ Lecturer questions:
 
 ## 7. Next step
 
-Before Phase 8: the group should run the "How to test" steps for Phases 4, 5, 6 and 7 against a real MongoDB and change those statuses to "Tested" if they pass (Phases 1 to 3 as well). Known issue 1 (anyone can register as Admin) MUST be fixed before the app goes on the internet in Phase 8.
+All eight phases are built. Nothing has been run against a real MongoDB or deployed, so the work that remains is testing and delivery, not new features.
 
-Phase 8: Deployment and README. Build only this phase, then stop.
-- Fix Known issue 1 first: in `server/controllers/authController.js` always create new users as `Employee`, ignore any `role` sent by the browser, and remove the role dropdown from `client/src/pages/Register.jsx`. Add a way to create the first Admin and let an Admin change roles, for example a small script `server/utils/createAdmin.js` that reads the name, email and password from `.env` (explain every line), or a role-change route for Admin only (`PUT /api/users/:id/role`) with a simple page. Ask the group which they prefer before building.
-- API address (Known issue 9): replace the hardcoded `http://localhost:5000/api` in `client/src/services/api.js` with `import.meta.env.VITE_API_URL`, make `client/src/services/authService.js` import the shared `api` instance instead of creating its own, and add `client/.env.example` with `VITE_API_URL`.
-- CORS: in `server/server.js` allow only the deployed client address from a new `CLIENT_URL` variable in `server/.env.example`, instead of `cors()` for every origin (keep localhost working for development).
-- Vercel (client): root directory `client`, build command `npm run build`, output `dist`, environment variable `VITE_API_URL`; add `client/vercel.json` with a rewrite of every path to `/index.html` so refreshing a page such as `/employees` does not give a 404.
-- Render (server): a Web Service with root directory `server`, build command `npm install`, start command `npm start`, environment variables `MONGO_URI`, `JWT_SECRET` (a long random value, different from the example) and `CLIENT_URL`; `PORT` is set by Render.
-- MongoDB Atlas: create a free cluster and a database user, allow network access from Render, and put the connection string in `MONGO_URI`. The unique indexes (attendance, payroll, employee, email) are created by Mongoose when the server first connects.
-- `README.md` (it is empty now): what the system does, the three roles, the stack, the folder structure, how to run it locally (install, `.env` files, start commands), a table of environment variables (names and what each is for, never real values), a summary of the API routes, deployment steps, and known limitations. No emojis. Update this section and the phase table when done.
-- Depends on: `server/server.js`, `server/.env.example`, `server/controllers/authController.js`, `client/src/pages/Register.jsx`, `client/src/services/api.js`, `client/src/services/authService.js`, and this file for the route list in the README.
+1. Test everything (most important). The group runs the "How to test" steps for Phases 1 to 8 against a real MongoDB, ideally each phase by a different member, fixes anything that fails, and changes each phase to "Tested" in the status table only when its steps pass. The checks done so far used in-memory stand-ins and a mocked API, not the real database.
+2. Deploy by following "Deploy" in `README.md` (Atlas, then Render, then Vercel, then `CLIENT_URL`, then `npm run create-admin`). Correct the README where a menu name has changed.
+3. Optional fixes, in a sensible order: Known issues 20 (an Admin or HR user can approve their own leave), 35 (role changes), 32 (labels above inputs, and move the Employees form into its own component for issue 12), 8 and 33 (hide controls and links by role), 18 and 31 (time zone), 21 (skip weekends in leave days), 26 (Admin and HR cannot see their own payslips).
+4. Prepare for the presentation. Each member should be able to say the "How it works" paragraph and answer the "Lecturer questions" for the phases they own (all in section 4). Run the handover check from `EMS_AI_PROMPTS.md` before switching AI tools.
 - Follow the Naming conventions above, keep each file under about 150 lines, no emojis.
