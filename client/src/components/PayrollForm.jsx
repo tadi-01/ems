@@ -18,6 +18,7 @@ const emptyForm = {
 function PayrollForm({ editing, onSaved, onCancel }) {
   const [employees, setEmployees] = useState([]);
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   // Loads the employee list for the dropdown when the form first appears.
@@ -57,6 +58,8 @@ function PayrollForm({ editing, onSaved, onCancel }) {
   // Sends the form to the server, then tells the page to reload its list.
   async function submitForm(event) {
     event.preventDefault();
+    if (saving) return;
+    setSaving(true);
     setError("");
     try {
       if (editing) await updatePayslip(editing._id, form);
@@ -65,7 +68,7 @@ function PayrollForm({ editing, onSaved, onCancel }) {
       onSaved();
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not save payslip.");
-    }
+    } finally { setSaving(false); }
   }
 
   // Builds one labelled number input so the form stays short.
@@ -88,7 +91,7 @@ function PayrollForm({ editing, onSaved, onCancel }) {
 
   return (
     <form className="data-form" onSubmit={submitForm}>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <label className="field">
         Employee
         <select
@@ -112,8 +115,8 @@ function PayrollForm({ editing, onSaved, onCancel }) {
       {amountField("bonuses", "Bonuses", false)}
       {amountField("deductions", "Deductions (including unpaid leave and absences)", false)}
       {amountField("tax", "Tax amount", false)}
-      <button className="button" type="submit">
-        {editing ? "Update payslip" : "Create payslip"}
+      <button className="button" type="submit" disabled={saving}>
+        {saving ? "Saving..." : editing ? "Update payslip" : "Create payslip"}
       </button>
       {editing && (
         <button className="button" type="button" onClick={onCancel}>

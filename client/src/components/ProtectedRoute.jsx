@@ -29,8 +29,11 @@ function ProtectedRoute() {
     return () => { cancelled = true; };
   }, [location.pathname, active]);
   if (!active) return <Navigate to="/login" replace />;
-  if (error) return <p className="error">{error}</p>;
-  if (checkedPath !== location.pathname) return <p>Checking session...</p>;
+  if (error) return <main className="session-state"><h1>Connection interrupted</h1>
+    <p className="error" role="alert">{error}</p>
+    <button className="button" onClick={() => window.location.reload()}>Try again</button>
+  </main>;
+  if (checkedPath !== location.pathname) return <p className="session-state" role="status">Checking session...</p>;
   return <Outlet />;
 }
 

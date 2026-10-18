@@ -1,134 +1,142 @@
 # Employee Management System
 
-A web application for managing a company's employees, departments, attendance, leave and payroll. It was built by a group of second-year Computer Science students for a Web Development course.
+EMS manages employees, departments, attendance, leave and payroll using React, Vite, plain CSS, Express and MongoDB. The interface follows the supplied Carbon reference with a dark header, blue actions, neutral surfaces and responsive tables.
 
-## Features
+## Requirements
 
-- Login and registration with three roles: Admin, HR and Employee
-- Employees: add, edit, delete and search (ID, name, department, designation, email, phone, joining date, salary)
-- Departments: add, edit and delete (name, manager, budget, employee count)
-- Attendance: check in and check out, working hours, and one record per employee per day
-- Leave: apply, cancel and see history; Admin and HR approve or reject; Annual leave balance
-- Payroll: basic salary plus allowances plus bonuses minus deductions minus tax gives net salary; printable payslip
-- Dashboard: total employees, present today, on leave today, monthly payroll and employees per department
-- Responsive layout that works on a phone
+- Node.js 20.19+ or a newer supported LTS version and npm (verified locally on Node.js 24).
+- MongoDB locally or Atlas credentials for an explicitly named database.
+- Two terminals. Install packages inside `server` and `client`; there is no root package.json.
 
-## What each role can do
+## Local setup
 
-| Role | Access |
-|---|---|
-| Admin and HR | Manage employees and departments, review leave and payroll; only Admin can change roles on Users. Shared permissions: manage employees, departments and payslips, see everyone's attendance, approve or reject leave, and see the dashboard totals |
-| Employee | Check in and out, see their own attendance, apply for and cancel leave, see their own payslips, and view the employee and department lists |
+Run these PowerShell commands from the repository root. Preserve existing `.env` files; copy examples only for a fresh setup.
 
-An Admin or HR user links an employee to an account using the Linked account dropdown on Employees. The link stays valid if the employee email changes. Existing records without a link are matched by email once on first use, then the account reference is saved. Admin and HR also need a linked employee record to use personal attendance, leave and payslips; administrative access alone does not create an employment record.
+**Terminal 1 - backend**
 
-## Technology
-
-| Part | Technology |
-|---|---|
-| Frontend | React (Vite), React Router, Axios, plain CSS |
-| Backend | Node.js and Express |
-| Database | MongoDB with Mongoose |
-| Login security | JSON Web Tokens (JWT) and password hashing with bcryptjs |
-| Hosting | Vercel (frontend), Render (backend), MongoDB Atlas (database) |
-
-## Folder structure
-
-```md
-ems/
-  client/                 React app
-    src/
-      components/         Layout, ProtectedRoute, forms and other reusable pieces
-      pages/              One file per page
-      services/           Functions that call the API (Axios)
-      App.jsx             List of routes
-      main.jsx            Starts the app
-      index.css           All styles, with colors and spacing as CSS variables
-    vercel.json           Makes page refreshes work on Vercel
-    .env.example          Example frontend settings
-  server/                 Express API
-    controllers/          The logic for each route
-    middleware/           Login check and role check
-    models/               Mongoose models (User, Employee, Department, Attendance, Leave, Payroll)
-    routes/               URL paths for each area
-    utils/                Helpers and the createAdmin setup script
-    server.js             Starts the API
-    .env.example          Example backend settings
-  PROGRESS.md             Build log, decisions, known issues and test steps
-  EMS_AI_PROMPTS.md       The prompts used with the AI assistant
-  README.md               This file
-
-```
-
-## Run it on your own computer
-
-You need Node.js 20 or newer (Node.js 24 is used for local verification), and a MongoDB database. The easiest database is a free MongoDB Atlas cluster (see "Deploy" below for how to create one).
-
-1. Get the code and open a terminal in the project folder.
-2. Set up and start the backend:
-
-```sh
+```powershell
 cd server
-npm install
-cp .env.example .env
-
+npm ci
+# Fresh setup only:
+Copy-Item .env.example .env
 ```
 
-(On Windows Command Prompt, use `copy` instead of `cp`.) Open `server/.env` and fill in the values (see the table below). To make a strong `JWT_SECRET`, run this and paste the result:
+Edit `server/.env`. Set `MONGO_URI` to your intended database, for example `mongodb://127.0.0.1:27017/employee_management`. For Atlas, keep the exact database name already in use after the hostname and before `?`. A different name creates a separate database when records are written. Never replace an existing name just to match this example.
 
-```html
+Set a random `JWT_SECRET` of at least 32 characters. Generate one locally:
+
+```powershell
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
 ```
 
-Then create the first Admin account and start the server:
+Set `CLIENT_URL=http://localhost:5173`. If you need the first Admin, set `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, then run `npm run create-admin`. This creates an Admin or promotes the existing account with that email; an existing account keeps its password. Remove `ADMIN_PASSWORD` afterward. Skip this step if your Admin exists.
 
-```sh
-npm run create-admin
+```powershell
 npm run dev
-
 ```
 
-After `create-admin` succeeds, delete the `ADMIN_PASSWORD` line from `server/.env`.
+Wait for the database connection and port 5000 startup message. Check [API health](http://localhost:5000/api/health).
 
-3. In a second terminal, set up and start the frontend:
+**Terminal 2 - frontend**
 
-```sh
+From the repository root:
+
+```powershell
 cd client
-npm install
-cp .env.example .env
-npm run dev
-
+npm ci
+# Fresh setup only:
+Copy-Item .env.example .env
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-4. Open http://localhost:5173 and log in with the Admin email and password you set.
+Set `VITE_API_URL=http://localhost:5000/api` in `client/.env`. Open [local EMS](http://127.0.0.1:5173). Both `localhost:5173` and `127.0.0.1:5173` are allowed API origins. Stop either service with Ctrl+C in its terminal. Restart Vite after frontend environment changes.
 
-New people who use the Register page always become Employees. The Admin account is only made with `npm run create-admin`.
+## First use and permissions
 
-## Environment variables
+1. Sign in as Admin. Public registration always creates an Employee account.
+2. Use Users & roles to assign HR if needed. Only Admin changes roles; users cannot change their own role.
+3. Create a department, then employee records. Select a registered account in **Linked account**. Registration alone does not create an employee record.
+4. Every role needs a linked employee record for personal attendance, leave and payslips. The stable link survives email changes; legacy unlinked records can match by email on first use.
 
-Real values must never be committed to GitHub. The `.env` files are ignored by Git.
+| Area | Admin | HR | Employee |
+|---|---|---|---|
+| Overview company totals | Yes | Yes | Personal task links |
+| Employee and department lists | View and manage | View and manage | View |
+| Personal attendance and leave | Yes | Yes | Yes |
+| All attendance and leave review | Yes | Yes | No |
+| All payroll management | Yes | Yes | No |
+| Own payslips | Yes | Yes | Yes |
+| Users & roles page | Yes | No | No |
 
-Backend (`server/.env`):
+Reviewers cannot approve or reject their own leave. Reassign a department manager before demoting that account. Departments with employees, and employees with attendance, leave or payroll history, cannot be deleted.
 
-| Name | What it is for |
+## Configuration
+
+Keep real values in ignored `.env` files or hosting environment settings.
+
+| Backend variable | Purpose |
 |---|---|
-| PORT | The port the API listens on. Render sets it for you. Default is 5000. |
-| MONGO_URI | MongoDB connection string with an explicit database name, e.g. `/employee_management` before `?`. Startup and admin setup reject a missing database name. |
-| JWT_SECRET | Random secret of at least 32 characters. Missing, short and example placeholder secrets prevent startup. |
-| CLIENT_URL | The address of the deployed frontend, with no slash at the end. Only this address (and http://localhost:5173) may call the API from a browser. |
-| ADMIN_NAME, ADMIN_EMAIL, ADMIN_PASSWORD | Used only by `npm run create-admin` to make the first Admin. |
-| COMPANY_TIME_ZONE | IANA time zone for attendance, leave year and dashboard dates. Default `Africa/Harare`. |
-| ANNUAL_LEAVE_DAYS | Non-negative integer allowance; default `21`. |
-| LEAVE_DAY_MODE | `calendar` (default) or `working` (excludes Saturday, Sunday and configured holidays). |
-| PUBLIC_HOLIDAYS | Comma-separated `YYYY-MM-DD` dates, used only in working mode. No holiday calendar is downloaded automatically. |
-| COMPANY_NAME, PAYROLL_CURRENCY | Optional payslip company heading and currency code, copied onto new payslips. |
+| `PORT` | API port; default 5000. Hosting may supply its own value. |
+| `MONGO_URI` | Connection URL containing the intended database name; missing names are rejected. |
+| `JWT_SECRET` | Random signing secret of at least 32 characters; sample values are rejected. |
+| `CLIENT_URL` | Frontend origin; use the deployed URL in production. |
+| `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | One-time Admin setup. |
+| `COMPANY_TIME_ZONE` | IANA zone; default `Africa/Harare`. |
+| `ANNUAL_LEAVE_DAYS` | Non-negative integer; default `21`. |
+| `LEAVE_DAY_MODE` | `calendar` by default, or `working` to exclude weekends and configured holidays. |
+| `PUBLIC_HOLIDAYS` | Comma-separated `YYYY-MM-DD` dates for working-day mode. |
+| `COMPANY_NAME`, `PAYROLL_CURRENCY` | Optional metadata copied onto new payslips. |
 
-Frontend (`client/.env`):
+Frontend `VITE_API_URL` must end in `/api`. It is compiled into builds, so changing it on a host requires a rebuild.
 
-| Name | What it is for |
-|---|---|
-| VITE_API_URL | The address of the API, ending in `/api`. Vite reads it when the app is built. |
+Leave remains **21 calendar days** by default. Settings apply to new requests without rewriting stored day counts. Tax, unpaid leave and absence deductions remain manually entered by HR. The server calculates net salary as basic salary + allowances + bonuses - deductions - tax. Audit fields identify the latest payslip editor, not a full revision history.
+
+## Verification
+
+```powershell
+cd server
+npm test
+# Optional live run with MongoDB permissions to create and drop a QA database:
+node scripts/verifyIntegration.js
+cd ../client
+npm test
+npm run build
+```
+
+The integration script uses port 5099 and a unique `ems_qa_<timestamp>` database on the configured MongoDB host. It seeds temporary accounts, makes real API requests and drops only that generated database in cleanup. It does not write fixtures to the configured employee database. After a forced interruption, check for a leftover QA database by its exact generated name.
+
+Optional browser checks require Chrome and Playwright installed in a separate test-tools directory. Set `PLAYWRIGHT_MODULE` to that installation's absolute `node_modules/playwright` path, then run `node client/scripts/verifyBrowser.cjs` from the repository root with Vite running. `QA_FRONTEND_URL` overrides the default `http://127.0.0.1:5173`. The suite uses API fixtures at 320, 390, 768, 1024, 1280 and 1440 pixels. Screenshots and results go to ignored `.qa/browser`; it does not write employee data.
+
+See `progress.md` for results and verification limits. Dependency manifests and lockfiles are aligned. This interface pass adds no application dependencies.
+
+## Deployment settings
+
+These are repository settings; provider plan features and dashboard labels may differ.
+
+| Service | Root | Build | Start or output | Environment |
+|---|---|---|---|---|
+| Render API | `server` | `npm ci` | `npm start` | `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL`, policy settings |
+| Vercel frontend | `client` | `npm run build` | `dist` | `VITE_API_URL=https://your-api-host/api` |
+
+Use the intended existing database name. Configure Atlas credentials and network access for the backend host. Set `CLIENT_URL` to the exact frontend origin. `client/vercel.json` supplies SPA route fallback. After deployment verify API health, login, registration, employee linking and nested-route refresh. This maintenance run does not publish to Render or Vercel.
+
+## Troubleshooting
+
+- **Cannot register:** read the API error; check API health, `VITE_API_URL` and `CLIENT_URL`. A duplicate email needs login instead. Admin or HR must then create and link the employee record.
+- **Missing personal records:** check Linked account on Employees.
+- **Unexpected database:** compare the database name in local and hosted `MONGO_URI`; do not omit or casually change it.
+- **Connection interrupted:** restore API/database connectivity and use Retry. Temporary server errors do not deliberately clear your session.
+- **Wrong role:** sign in again to refresh navigation. The API checks the current database role.
+- **Port in use:** stop the previous service before starting another. A different frontend origin also needs API configuration.
+- **Wide tables on phones:** scroll within the table; keyboard users can focus the region and use arrow keys.
+
+## Structure and conventions
+
+`client/src/pages` contains screens, `components` shared UI and `services` API/session helpers. `client/src/index.css` owns styling. The backend separates `routes`, `controllers`, `models`, `middleware` and `utils`. Verification scripts live in each application's `scripts` folder.
+
+Keep plain JavaScript/JSX, simple async/await, comments explaining functions and small components (aim for roughly 150 lines). Reuse existing services and backend validation. No TypeScript, Redux or Carbon component-library migration is needed.
+
+The retained documentation is this README, `progress.md`, and `Project_Documentation.docx` (architecture, models, workflows and maintenance).
 
 ## API routes
 
@@ -167,58 +175,3 @@ All routes start with `/api`. "Logged in" means any user with a valid login toke
 | PUT /payroll/:id | Admin or HR | Changes the amounts on a payslip |
 | DELETE /payroll/:id | Admin or HR | Deletes a payslip |
 | GET /dashboard | Admin or HR | Returns the dashboard totals |
-
-## Deploy
-
-Do the three parts in this order: database, backend, frontend. Menu names on these websites change from time to time, so follow the idea of each step if a button has moved.
-
-### 1. Database (MongoDB Atlas)
-
-1. Create a free account at https://www.mongodb.com/atlas and create a free cluster.
-2. Under Database Access, create a database user with a password. Write the password down.
-3. Under Network Access, allow access from the internet (0.0.0.0/0). Render's free plan does not give the backend a fixed address, so Atlas cannot be limited to one address.
-4. Click Connect, choose Drivers, and copy the connection string. Put your database user and password in it, and add the database name `employee_management` after the host name. This is your `MONGO_URI`.
-
-The unique rules (one attendance record per day, one payslip per month, unique emails) are created automatically the first time the server connects.
-
-### 2. Backend (Render)
-
-1. Create an account at https://render.com and choose New, then Web Service. Connect the GitHub repository.
-2. Set the root directory to `server`, the build command to `npm install` and the start command to `npm start`.
-3. Add the environment variables `MONGO_URI` and `JWT_SECRET` (a new long random value, not the one from your computer). Leave `CLIENT_URL` empty for now.
-4. Deploy. When it finishes, Render shows the address, for example `https://your-api.onrender.com`. Opening `https://your-api.onrender.com/api/health` should show "Employee Management API is running."
-
-Notes about the free plan: Render's free web services spin down after 15 minutes without requests and take about a minute to wake up, so the first page load after a quiet period is slow. Free services also have no shell, so the first Admin account is made from your own computer (see step 4 below).
-
-### 3. Frontend (Vercel)
-
-1. Create an account at https://vercel.com and choose Add New, then Project. Import the GitHub repository.
-2. Set the root directory to `client`. Vercel detects Vite; the build command is `npm run build` and the output folder is `dist`.
-3. Add the environment variable `VITE_API_URL` with the value `https://your-api.onrender.com/api` (your Render address followed by `/api`).
-4. Deploy. The file `client/vercel.json` sends every path to the app, so refreshing a page such as `/employees` works.
-
-If you change `VITE_API_URL` later, redeploy the frontend, because the value is built into the app.
-
-### 4. Connect the two parts and create the Admin
-
-1. In Render, set `CLIENT_URL` to your Vercel address (for example `https://your-app.vercel.app`, with no slash at the end) and let the service redeploy. Without this the browser will block the frontend from calling the API.
-2. On your own computer, put the Atlas `MONGO_URI` and the `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD` values in `server/.env`, then run `npm run create-admin` inside the `server` folder. Delete `ADMIN_PASSWORD` from the file afterwards.
-3. Open your Vercel address and log in as the Admin.
-
-## Verification and policy choices
-
-Run `npm test` inside `server` and `client`, then `npm run build` inside `client`. The tests use Node's built-in runner and the existing Vite loader, with no new dependencies. Server tests use database stand-ins; client tests render role-dependent pages and check session handling. They do not replace the live integration and browser checklist in `docs/VERIFICATION.md`.
-
-- Employee and Department lists remain readable by every logged-in role, as required. Only Admin and HR see editing controls. Users is Admin-only, and the server checks the current role on every protected request.
-- You cannot change your own role. Assign another manager before demoting a department manager to Employee.
-- Leave review cannot approve or reject the reviewer's own request. Pending review/cancellation uses a conditional update so one cannot overwrite the other.
-- Leave remains 21 calendar days by default. Working-day counting and the allowance are configurable. Settings affect new requests; stored leave day totals are not rewritten. Plan allowance changes at the start of a year.
-- Tax remains a manually entered amount. HR includes unpaid leave and absence adjustments in Deductions; automatic tax or absence calculations require an agreed policy and are not enabled. This preserves the project's chosen payroll rules.
-- Admin and HR can switch between All payslips and My payslips. Edits record `updatedBy` and `updatedAt`; old slips retain their original amounts and creator. The audit fields record the latest editor, not a full revision history.
-- A department with employees cannot be deleted. An employee with attendance, leave or payroll history cannot be deleted, to preserve those records.
-- The API requires a real database and waits for model indexes before listening. No migration, live-data deletion, deployment or hosting-plan change was performed by this maintenance pass.
-- Live MongoDB index/concurrency checks, full browser flows and deployment remain to be verified. Free hosting availability is an operational property, not an application defect.
-
-## Project notes
-
-`PROGRESS.md` is the build log. It lists every file, the decisions made, how to test each phase, and what is still untested. Please read it before changing the code.

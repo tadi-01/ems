@@ -20,6 +20,7 @@ function Dashboard() {
   const user = getSavedUser();
   const canSeeTotals = user?.role === "Admin" || user?.role === "HR";
   const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(canSeeTotals);
   const [error, setError] = useState("");
 
   // Loads the totals when the page opens (Admin and HR only).
@@ -29,22 +30,25 @@ function Dashboard() {
 
   // Requests the dashboard totals from the backend.
   async function loadSummary() {
+    setLoading(true);
+    setError("");
     try {
       setSummary(await getDashboardSummary());
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Could not load totals.");
-    }
+      setError(requestError.response?.data?.message || "Could not load totals. Check your connection and try again.");
+    } finally { setLoading(false); }
   }
 
   return (
     <main className="content-page">
       <div className="page-heading"><div>
         <p className="section-label">Your workspace at a glance</p>
-        <h1>Welcome, <em>{user?.name?.split(" ")[0] || "there"}.</em></h1>
+        <h1>Overview</h1>
+        <p className="overview-greeting">Welcome back, {user?.name?.split(" ")[0] || "there"}.</p>
         <p className="page-description">{canSeeTotals ? "Here is an overview of your people, time and payroll." : "Everything you need for your workday, in one place."}</p>
       </div><span className="role-label">{canSeeTotals ? "Team overview" : "Employee overview"}</span></div>
-      {error && <p className="error" role="alert">{error}</p>}
-      {canSeeTotals && !summary && !error && <p className="empty-state" role="status">Loading your team overview...</p>}
+      {error && <div className="error" role="alert"><p>{error}</p><button className="button button-secondary" onClick={loadSummary} disabled={loading}>Try again</button></div>}
+      {canSeeTotals && loading && <p className="empty-state" role="status">Loading your team overview...</p>}
       {summary && (
         <>
           <div className="card-grid">
@@ -59,7 +63,7 @@ function Dashboard() {
         </>
       )}
       <div className="dashboard-columns">
-        {canSeeTotals ? <DepartmentOverview summary={summary} /> : <section className="employee-welcome">
+        {canSeeTotals ? <DepartmentOverview summary={summary} loading={loading} error={Boolean(error)} /> : <section className="employee-welcome">
           <p className="section-label">Your daily essentials</p>
           <h2>A little clarity for <em>every workday.</em></h2>
           <p>Record your attendance, plan time away and find your payslips. Your personal records are always available from the workspace menu.</p>

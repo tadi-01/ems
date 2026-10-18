@@ -1,3 +1,4 @@
+import EmployeeTable from "../components/EmployeeTable";
 import EmployeeForm from "../components/EmployeeForm";
 import { getAllUsers } from "../services/userService";
 import { getSavedUser } from "../services/session";
@@ -30,6 +31,9 @@ function Employees() {
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   // Loads employees and departments when the page opens.
@@ -39,13 +43,14 @@ function Employees() {
 
   // Requests the current data from the backend.
   async function loadData() {
+    setLoading(true);
     try {
-      setEmployees(await getAllEmployees());
+      setEmployees(await getAllEmployees(search));
       setDepartments(await getAllDepartments());
       if (canManage) setUsers(await getAllUsers());
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not load data.");
-    }
+    } finally { setLoading(false); }
   }
 
   // Updates one employee form field.
@@ -57,25 +62,30 @@ function Employees() {
   async function searchEmployees(event) {
     event.preventDefault();
     setError("");
+    setLoading(true);
     try { setEmployees(await getAllEmployees(search)); }
-    catch (requestError) { setError(requestError.response?.data?.message || "Search failed."); }
+    catch (requestError) { setError(requestError.response?.data?.message || "Search failed."); } finally { setLoading(false); }
   }
 
   // Saves a new employee or updates the employee being edited.
   async function submitForm(event) {
     event.preventDefault();
+    if (saving) return;
+    setSaving(true);
     setError("");
+    setNotice("");
     try {
       if (editingId) await updateEmployee(editingId, form);
       else await createEmployee({ ...form, salary: Number(form.salary) });
       setForm(emptyForm);
       setEditingId(null);
       await loadData();
+      setNotice("Employee saved.");
     } catch (requestError) {
       setError(
         requestError.response?.data?.message || "Could not save employee.",
       );
-    }
+    } finally { setSaving(false); }
   }
 
   // Places an employee in the form so it can be edited.
@@ -100,8 +110,9 @@ function Employees() {
     <main className="content-page">
       <h1>Employees</h1>
       <p className="page-description">Your team directory. Find people and keep their employment details up to date.</p>
-      {error && <p className="error">{error}</p>}
-      {canManage && <EmployeeForm form={form} departments={departments} users={users}
+      {error && <p className="error" role="alert">{error}</p>}
+      {notice && <p className="notice" role="status">{notice}</p>}
+      {canManage && <EmployeeForm saving={saving} form={form} departments={departments} users={users}
         editingId={editingId} onChange={updateField} onSubmit={submitForm}
         onCancel={() => { setForm(emptyForm); setEditingId(null); }} />}
       <form className="search-form" onSubmit={searchEmployees}>
@@ -114,37 +125,8 @@ function Employees() {
           Search
         </button>
       </form>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Department</th>
-              <th>Designation</th>
-              <th>Email</th>
-              {canManage && <th>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((employee) => (
-              <tr key={employee._id}>
-                <td>{employee.employeeId}</td>
-                <td>{employee.name}</td>
-                <td>{employee.department?.name}</td>
-                <td>{employee.designation}</td>
-                <td>{employee.email}</td>
-                {canManage && <td>
-                  <button onClick={() => startEditing(employee)}>Edit</button>{" "}
-                  <button onClick={() => removeEmployee(employee._id)}>
-                    Delete
-                  </button>
-                </td>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <EmployeeTable employees={employees} canManage={canManage} loading={loading}
+        onEdit={startEditing} onDelete={removeEmployee} />
     </main>
   );
 }

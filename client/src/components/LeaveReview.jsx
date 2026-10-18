@@ -1,3 +1,5 @@
+import EmptyRow from "./EmptyRow";
+import LeaveBalances from "./LeaveBalances";
 import { useEffect, useState } from "react";
 import {
   approveLeave,
@@ -13,6 +15,9 @@ function LeaveReview({ refreshKey, onReviewed }) {
   const [requests, setRequests] = useState([]);
   const [balances, setBalances] = useState(null);
   const [statusFilter, setStatusFilter] = useState("Pending");
+  const [loading, setLoading] = useState(true);
+  const [reviewing, setReviewing] = useState(false);
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
   // Loads the requests and balances on first show, on filter change and on refresh.
@@ -22,32 +27,40 @@ function LeaveReview({ refreshKey, onReviewed }) {
 
   // Requests the filtered leave requests and the balances from the backend.
   async function loadData() {
+    setLoading(true);
+    setError("");
     try {
       setRequests(await getAllLeaves(statusFilter));
       setBalances(await getLeaveBalances());
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Could not load requests.");
-    }
+      setError(requestError.response?.data?.message || "Could not load requests. Change the filter to try again.");
+    } finally { setLoading(false); }
   }
 
   // Approves or rejects one request and then reloads the tables.
   async function reviewRequest(action, id) {
+    if (reviewing) return;
+    setReviewing(true);
+    setNotice("");
     setError("");
     try {
       await action(id);
+      setNotice("Leave request updated.");
       onReviewed();
       await loadData();
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not review request.");
-    }
+    } finally { setReviewing(false); }
   }
 
   return (
     <>
       <h2>Leave requests</h2>
-      {error && <p className="error">{error}</p>}
+      {notice && <p className="notice" role="status">{notice}</p>}
+      {reviewing && <p role="status">Updating leave request...</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       <div className="search-form">
-        <label className="field">Request status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+        <label className="field">Request status<select disabled={loading || reviewing} value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
           <option value="">All</option>
           <option>Pending</option>
           <option>Approved</option>
@@ -55,7 +68,7 @@ function LeaveReview({ refreshKey, onReviewed }) {
           <option>Cancelled</option>
         </select></label>
       </div>
-      <div className="table-wrap">
+      <div className="table-wrap" tabIndex="0" role="region" aria-label="Scrollable records">
         <table>
           <thead>
             <tr>
@@ -70,6 +83,7 @@ function LeaveReview({ refreshKey, onReviewed }) {
             </tr>
           </thead>
           <tbody>
+            {requests.length === 0 && <EmptyRow columns={8}>{loading ? "Loading requests..." : "No leave requests match this status."}</EmptyRow>}
             {requests.map((request) => (
               <tr key={request._id}>
                 <td>
@@ -88,10 +102,10 @@ function LeaveReview({ refreshKey, onReviewed }) {
                 <td>
                   {request.status === "Pending" && (
                     <>
-                      <button onClick={() => reviewRequest(approveLeave, request._id)}>
+                      <button disabled={reviewing || loading} onClick={() => reviewRequest(approveLeave, request._id)}>
                         Approve
                       </button>{" "}
-                      <button onClick={() => reviewRequest(rejectLeave, request._id)}>
+                      <button disabled={reviewing || loading} onClick={() => reviewRequest(rejectLeave, request._id)}>
                         Reject
                       </button>
                     </>
@@ -103,35 +117,7 @@ function LeaveReview({ refreshKey, onReviewed }) {
         </table>
       </div>
 
-      {balances && (
-        <>
-          <h2>Annual leave balances for {balances.year}</h2>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Allowance</th>
-                  <th>Used</th>
-                  <th>Remaining</th>
-                </tr>
-              </thead>
-              <tbody>
-                {balances.balances.map((row) => (
-                  <tr key={row.employee._id}>
-                    <td>
-                      {row.employee.employeeId} {row.employee.name}
-                    </td>
-                    <td>{balances.annualAllowance}</td>
-                    <td>{row.usedDays}</td>
-                    <td>{row.remainingDays}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      {balances && <LeaveBalances balances={balances} />}
     </>
   );
 }
