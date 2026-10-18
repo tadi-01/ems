@@ -375,3 +375,10 @@ td button {
     padding: var(--space-2) 0;
   }
 }
+
+/* Labelled filters keep normal input height and align their action buttons. */
+.search-form .field input,
+.search-form .field select { flex: none; width: 100%; font-weight: normal; }
+.search-form .button { align-self: flex-end; }
+.field { min-width: 0; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }

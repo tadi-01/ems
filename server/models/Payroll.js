@@ -18,6 +18,9 @@ const payrollSchema = new mongoose.Schema(
     tax: { type: Number, default: 0, min: 0 },
     // basic + allowances + bonuses - deductions - tax. The server works this out.
     netSalary: { type: Number, required: true },
+    companyName: { type: String, default: "" },
+    currency: { type: String, default: "" },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     // The Admin or HR user who created the payslip.
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

@@ -1,3 +1,6 @@
+import { validateRuntimeSettings } from "./utils/runtimeSettings.js";
+import mongoose from "mongoose";
+import userRoutes from "./routes/userRoutes.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -25,6 +28,7 @@ const allowedOrigins = [
 app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
@@ -33,20 +37,22 @@ app.use("/api/payroll", payrollRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/api/health", (request, response) => {
-  response.json({ message: "Employee Management API is running." });
+  response.status(mongoose.connection.readyState === 1 ? 200 : 503)
+    .json({ message: mongoose.connection.readyState === 1
+      ? "Employee Management API is running." : "Database unavailable." });
 });
 
 // Starts the server after connecting to MongoDB when a database URL is provided.
 async function startServer() {
-  if (!process.env.JWT_SECRET) {
-    console.error("JWT_SECRET is not set. Add it to .env or the host settings.");
-    process.exit(1);
-  }
-
+  validateRuntimeSettings();
   await connectDatabase();
+  for (const model of Object.values(mongoose.models)) await model.init();
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
 }
 
-startServer();
+startServer().catch((error) => {
+  console.error("Startup failed:", error.message);
+  process.exit(1);
+});

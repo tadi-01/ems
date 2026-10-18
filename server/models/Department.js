@@ -9,7 +9,6 @@ const departmentSchema = new mongoose.Schema(
       required: true,
     },
     budget: { type: Number, required: true, min: 0 },
-    employeeCount: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );

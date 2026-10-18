@@ -35,6 +35,8 @@ async function createPayslip(request, response) {
       month,
       ...result.amounts,
       createdBy: request.user.userId,
+      companyName: process.env.COMPANY_NAME || "",
+      currency: process.env.PAYROLL_CURRENCY || "",
     });
     response.status(201).json(await payslip.populate("employee", employeeFields));
   } catch (error) {
@@ -65,6 +67,7 @@ async function updatePayslip(request, response) {
     }
 
     Object.assign(payslip, result.amounts);
+    payslip.updatedBy = request.user.userId;
     await payslip.save();
     response.json(await payslip.populate("employee", employeeFields));
   } catch (error) {
@@ -107,7 +110,7 @@ async function getMyPayslips(request, response) {
     if (!employee) {
       response
         .status(404)
-        .json({ message: "No employee record matches your account email." });
+        .json({ message: "Ask Admin or HR to link your account on the Employees page." });
       return;
     }
 

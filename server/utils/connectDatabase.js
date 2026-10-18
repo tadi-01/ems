@@ -1,23 +1,12 @@
 import mongoose from "mongoose";
+import { getDatabaseUrl } from "./databaseSettings.js";
 
-// Connects the server to MongoDB and gives a clear error when setup is missing.
+// Connects to the named database before the API accepts requests.
 async function connectDatabase() {
-  const databaseUrl = process.env.MONGO_URI;
-
-  if (!databaseUrl) {
-    console.log(
-      "MONGO_URI is not set. The server will run without MongoDB for now.",
-    );
-    return;
-  }
-
-  try {
-    await mongoose.connect(databaseUrl);
-    console.log("MongoDB connected successfully");
-  } catch (error) {
-    console.error("MongoDB connection failed:", error.message);
-    process.exit(1);
-  }
+  const url = getDatabaseUrl();
+  try { await mongoose.connect(url); }
+  catch { throw new Error("Could not connect to MongoDB. Check MONGO_URI and database network access."); }
+  console.log("MongoDB connected successfully");
 }
 
 export default connectDatabase;

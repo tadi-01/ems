@@ -1,8 +1,8 @@
 import express from "express";
+import { getMyLeaves } from "../controllers/leaveHistoryController.js";
 import {
   applyForLeave,
   cancelLeave,
-  getMyLeaves,
 } from "../controllers/leaveController.js";
 import {
   approveLeave,

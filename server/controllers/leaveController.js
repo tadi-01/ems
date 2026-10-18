@@ -1,12 +1,12 @@
 import Leave from "../models/Leave.js";
+import { isValidDate } from "../utils/dateHelpers.js";
 import getEmployeeForUser from "../utils/getEmployeeForUser.js";
 import {
-  ANNUAL_LEAVE_DAYS,
   countLeaveDays,
   getRemainingAnnualDays,
 } from "../utils/leaveHelpers.js";
 
-const noEmployeeMessage = "No employee record matches your account email.";
+const noEmployeeMessage = "Ask Admin or HR to link your account on the Employees page.";
 
 // Creates a Pending leave request for the logged-in employee after checking
 // the dates, overlapping requests and the Annual leave balance.
@@ -28,7 +28,7 @@ async function applyForLeave(request, response) {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    if (isNaN(start) || isNaN(end)) {
+    if (!isValidDate(startDate) || !isValidDate(endDate)) {
       response.status(400).json({ message: "The dates are not valid." });
       return;
     }
@@ -60,6 +60,10 @@ async function applyForLeave(request, response) {
     }
 
     const days = countLeaveDays(start, end);
+    if (days === 0) {
+      response.status(400).json({ message: "This range contains no leave days under the company policy." });
+      return;
+    }
     if (leaveType === "Annual") {
       const remaining = await getRemainingAnnualDays(
         employee._id,
@@ -113,40 +117,16 @@ async function cancelLeave(request, response) {
       return;
     }
 
-    leave.status = "Cancelled";
-    await leave.save();
-    response.json(leave);
+    const cancelled = await Leave.findOneAndUpdate({ _id: leave._id, status: "Pending" },
+      { status: "Cancelled" }, { new: true });
+    if (!cancelled) {
+      response.status(409).json({ message: "This request has already been reviewed." });
+      return;
+    }
+    response.json(cancelled);
   } catch (error) {
     response.status(400).json({ message: "Could not cancel leave." });
   }
 }
 
-// Returns the employee's leave history (newest first) with their Annual balance.
-async function getMyLeaves(request, response) {
-  try {
-    const employee = await getEmployeeForUser(request);
-    if (!employee) {
-      response.status(404).json({ message: noEmployeeMessage });
-      return;
-    }
-
-    const year = new Date().getUTCFullYear();
-    const leaves = await Leave.find({ employee: employee._id }).sort({
-      startDate: -1,
-    });
-    const remainingAnnualDays = await getRemainingAnnualDays(
-      employee._id,
-      year,
-    );
-    response.json({
-      leaves,
-      year,
-      annualAllowance: ANNUAL_LEAVE_DAYS,
-      remainingAnnualDays,
-    });
-  } catch (error) {
-    response.status(500).json({ message: "Could not load your leave." });
-  }
-}
-
-export { applyForLeave, cancelLeave, getMyLeaves };
+export { applyForLeave, cancelLeave };

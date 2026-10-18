@@ -9,7 +9,7 @@ import {
 // The Admin and HR part of the Leave page: review requests and see balances.
 // The refreshKey changes when the page above sends or cancels a request,
 // which makes this list load again.
-function LeaveReview({ refreshKey }) {
+function LeaveReview({ refreshKey, onReviewed }) {
   const [requests, setRequests] = useState([]);
   const [balances, setBalances] = useState(null);
   const [statusFilter, setStatusFilter] = useState("Pending");
@@ -35,6 +35,7 @@ function LeaveReview({ refreshKey }) {
     setError("");
     try {
       await action(id);
+      onReviewed();
       await loadData();
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Could not review request.");
@@ -46,13 +47,13 @@ function LeaveReview({ refreshKey }) {
       <h2>Leave requests</h2>
       {error && <p className="error">{error}</p>}
       <div className="search-form">
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+        <label className="field">Request status<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
           <option value="">All</option>
           <option>Pending</option>
           <option>Approved</option>
           <option>Rejected</option>
           <option>Cancelled</option>
-        </select>
+        </select></label>
       </div>
       <div className="table-wrap">
         <table>

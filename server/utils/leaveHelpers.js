@@ -1,12 +1,17 @@
 import Leave from "../models/Leave.js";
 
-// Every employee gets this many Annual leave days in each calendar year.
-const ANNUAL_LEAVE_DAYS = 21;
+import { getLeavePolicy } from "./leavePolicy.js";
 
 // Counts calendar days from the start date to the end date, including both days.
 // For example 2026-10-20 to 2026-10-22 is 3 days.
-function countLeaveDays(startDate, endDate) {
-  return Math.round((endDate - startDate) / 86400000) + 1;
+function countLeaveDays(startDate, endDate, policy = getLeavePolicy()) {
+  let days = 0;
+  for (let date = new Date(startDate); date <= endDate; date.setUTCDate(date.getUTCDate() + 1)) {
+    const weekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
+    const holiday = policy.holidays.includes(date.toISOString().slice(0, 10));
+    if (policy.dayMode === "calendar" || (!weekend && !holiday)) days += 1;
+  }
+  return days;
 }
 
 // Returns the first moment of a year and the first moment of the next year.
@@ -39,11 +44,10 @@ async function getUsedAnnualDays(employeeId, year) {
 // Returns how many Annual leave days an employee still has in a year.
 async function getRemainingAnnualDays(employeeId, year) {
   const usedDays = await getUsedAnnualDays(employeeId, year);
-  return ANNUAL_LEAVE_DAYS - usedDays;
+  return getLeavePolicy().annualAllowance - usedDays;
 }
 
 export {
-  ANNUAL_LEAVE_DAYS,
   countLeaveDays,
   getYearRange,
   getRemainingAnnualDays,
