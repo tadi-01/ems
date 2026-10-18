@@ -470,3 +470,11 @@ Final automated result: 28 server tests and 4 client tests passed; the productio
 Verification: server regression tests cover permissions, explicit database selection, employee links/counts, reference deletion guards, date and policy boundaries, leave self-review and conditional state changes, and payroll calculation/audit access. Client tests cover role-dependent rendering and expired/damaged session handling. Run npm test separately in server and client, then npm run build in client; run node --check on server JavaScript. These are automated checks with database stand-ins and server-rendered UI, not live MongoDB or full browser tests.
 
 Next: follow docs/VERIFICATION.md with disposable data, then complete deployment as a separate delivery task. Keep the existing phase rows marked Not tested until their full live acceptance steps pass. Do not delete the accidental database or move existing records without explicitly agreeing which records should be retained.
+
+
+## 8. Design refinement (2026-10-18)
+
+Refined the existing plain-CSS interface without adding libraries, fonts, gradients, animation or shadows. Login and Register share an AuthLayout with a navy introduction panel, labelled inputs, autocomplete and submission feedback. Layout now has grouped navigation, a clear active-page marker, account initials and a breadcrumb; an accessible skip link jumps to the content. Dashboard uses clearer summary cards, real-data loading/empty states and role-aware quick actions. Shared CSS improves form panels, table spacing, contrast, keyboard focus and narrow-screen layout, while retaining the four-pixel radius and status colours. Print rules now override mobile sidebar styling as well.
+
+Files: client/src/index.css, components/AuthLayout.jsx, components/Layout.jsx, components/QuickActions.jsx, pages/Login.jsx, pages/Register.jsx and pages/Dashboard.jsx. No backend, deployment settings or database records changed. Verify with the existing client tests and production build; browser visual review is still required because no connected browser is available in this session.
+`npm test` in client: all 4 existing regression tests passed. `npm run build`: passed. `git diff --check`: passed. Visual browser verification remains pending.
