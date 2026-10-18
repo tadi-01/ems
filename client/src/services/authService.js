@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const api = axios.create({ baseURL: "http://localhost:5000/api" });
+import api from "./api";
 
 // Sends registration details to the server and saves the returned login.
 async function registerUser(userDetails) {

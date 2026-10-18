@@ -2,18 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
 
-// Shows the registration form and creates a new user account.
+// Shows the registration form and creates a new Employee account.
+// The role is not chosen here: the server makes every new user an Employee.
 function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "Employee",
-  });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
 
-  // Updates one form field when the user types or selects a role.
+  // Updates one form field when the user types.
   function updateField(event) {
     setForm({ ...form, [event.target.name]: event.target.value });
   }
@@ -65,14 +61,6 @@ function Register() {
             onChange={updateField}
             required
           />
-        </label>
-        <label>
-          Role
-          <select name="role" value={form.role} onChange={updateField}>
-            <option>Employee</option>
-            <option>HR</option>
-            <option>Admin</option>
-          </select>
         </label>
         <button className="button" type="submit">
           Register
