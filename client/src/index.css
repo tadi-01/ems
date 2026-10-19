@@ -298,16 +298,16 @@ form.data-form > .button { justify-self: start; }
 .sidebar-collapsed .layout-main { margin-left: 0; }
 .masthead-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .account-menu { position: relative; display: flex; align-items: center; gap: 12px; }
-.account-icon-button, .profile-button { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 56px; color: #F4F4F4; background: transparent; border: 1px solid #394554; cursor: pointer; }
-.account-icon-button { width: 58px; border-radius: 16px; }
+.account-icon-button, .profile-button { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; color: #F4F4F4; background: transparent; border: 1px solid #394554; cursor: pointer; }
+.account-icon-button { width: 44px; border-radius: 10px; }
 .account-icon-button:hover, .account-icon-button:focus-visible, .profile-button:hover, .profile-button:focus-visible { background: #111923; border-color: #78A9FF; outline: 2px solid #78A9FF; outline-offset: 2px; }
-.notification-icon { position: relative; width: 29px; height: 23px; border: 4px solid #A6B3C3; border-top: 0; border-radius: 3px 3px 6px 6px; }
-.notification-icon::before, .notification-icon::after { content: ""; position: absolute; top: -8px; width: 13px; height: 9px; border-top: 4px solid #A6B3C3; }
-.notification-icon::before { left: -4px; transform: rotate(25deg); }
-.notification-icon::after { right: -4px; transform: rotate(-25deg); }
-.notification-count { position: absolute; top: 6px; right: 5px; display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; color: #161616; background: #78A9FF; border-radius: 999px; font-size: 11px; font-weight: 700; }
-.profile-button { gap: 10px; padding: 5px 12px 5px 6px; border-radius: 30px; text-align: left; }
-.profile-avatar { display: grid; place-items: center; width: 46px; height: 46px; color: #161616; background: linear-gradient(145deg, #A6B3C3, #78A9FF); border: 3px solid #394554; border-radius: 50%; font-weight: 700; }
+.notification-icon { position: relative; width: 17px; height: 14px; border: 2px solid #A6B3C3; border-top: 0; border-radius: 2px 2px 4px 4px; }
+.notification-icon::before, .notification-icon::after { content: ""; position: absolute; top: -5px; width: 8px; height: 5px; border-top: 2px solid #A6B3C3; }
+.notification-icon::before { left: -2px; transform: rotate(25deg); }
+.notification-icon::after { right: -2px; transform: rotate(-25deg); }
+.notification-count { position: absolute; top: 4px; right: 3px; display: grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px; color: #161616; background: #78A9FF; border-radius: 999px; font-size: 9px; font-weight: 700; }
+.profile-button { gap: 8px; padding: 3px 9px 3px 4px; border-radius: 24px; text-align: left; }
+.profile-avatar { display: grid; place-items: center; width: 34px; height: 34px; color: #161616; background: linear-gradient(145deg, #A6B3C3, #78A9FF); border: 2px solid #394554; border-radius: 50%; font-size: .78rem; font-weight: 700; }
 .profile-summary { display: grid; gap: 2px; padding-right: 4px; }
 .profile-summary .masthead-name { font-weight: 600; }
 .profile-summary .role-label { color: #A6B3C3; font-size: .72rem; text-transform: capitalize; }
@@ -330,7 +330,7 @@ form.data-form > .button { justify-self: start; }
   .topbar { gap: 8px; padding-inline: 8px; }
   .account-menu { gap: 8px; }
   .profile-summary { display: none; }
-  .profile-button { padding-right: 6px; }
+  .profile-button { padding: 3px; }
   .account-menu .role-label { display: none; }
 }
 
