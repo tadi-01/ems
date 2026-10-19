@@ -52,7 +52,7 @@ function Dashboard() {
             <SummaryCard label="Present today" value={summary.presentToday} detail={summary.date} />
             <SummaryCard label="On leave today" value={summary.onLeaveToday} detail="Approved time off" />
             <SummaryCard
-              label="Monthly payroll" detail={`${summary.month} · Recorded net, not payments`}
+              label="Monthly payroll" detail={summary.month}
               value={Number(summary.monthlyPayroll).toFixed(2)}
             />
           </div>
