@@ -1,10 +1,11 @@
+import BudgetPanel from "../components/BudgetPanel";
 import EmptyRow from "../components/EmptyRow";
 import { useEffect, useState } from "react";
 import { getAllDepartments, createDepartment, updateDepartment, deleteDepartment } from "../services/departmentService";
 import { getAllUsers } from "../services/userService";
 import { getSavedUser } from "../services/session";
 
-const emptyForm = { name: "", manager: "", budget: "" };
+const emptyForm = { name: "", manager: "", budget: "0", reason: "" };
 
 // Lists departments for everyone, with an editor only for Admin and HR.
 function Departments() {
@@ -71,8 +72,9 @@ function Departments() {
         </select>
       </label>
       <label className="field">Budget
-        <input name="budget" type="number" min="0" step="0.01" value={form.budget} onChange={updateField} required />
+        <input name="budget" type="number" min="0" step="0.01" value={form.budget} onChange={updateField} disabled={Boolean(editingId) || getSavedUser()?.role !== "Admin"} required />
       </label>
+      {!editingId && getSavedUser()?.role === "Admin" && <label className="field">Initial budget justification<input name="reason" value={form.reason || ""} onChange={updateField} required={Number(form.budget) > 0} /></label>}
       <button className="button" type="submit" disabled={saving}>{saving ? "Saving..." : editingId ? "Update department" : "Add department"}</button>
       {editingId && <button className="button button-secondary" type="button"
         onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</button>}
@@ -85,6 +87,7 @@ function Departments() {
           <button onClick={() => removeDepartment(department._id)}>Delete</button></td>}
       </tr>)}</tbody>
     </table></div>
+    {canManage && <BudgetPanel refreshKey={departments} />}
   </main>;
 }
 

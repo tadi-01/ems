@@ -75,12 +75,11 @@ function Employees() {
     setError("");
     setNotice("");
     try {
-      if (editingId) await updateEmployee(editingId, form);
-      else await createEmployee({ ...form, salary: Number(form.salary) });
+      const result = editingId ? await updateEmployee(editingId, form) : await createEmployee({ ...form, salary: Number(form.salary) });
       setForm(emptyForm);
       setEditingId(null);
       await loadData();
-      setNotice("Employee saved.");
+      setNotice(result.pendingApproval ? result.message : "Employee saved.");
     } catch (requestError) {
       setError(
         requestError.response?.data?.message || "Could not save employee.",

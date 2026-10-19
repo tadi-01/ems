@@ -21,7 +21,7 @@ api.interceptors.response.use((response) => response, (error) => {
   const path = error.config?.url;
   if (error.response?.status === 401 && !["/auth/login", "/auth/register"].includes(path)) {
     clearLogin();
-    window.location.assign("/login");
+    window.dispatchEvent(new Event("ems-session-expired"));
   }
   return Promise.reject(error);
 });

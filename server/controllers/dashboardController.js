@@ -23,7 +23,7 @@ async function getEmployeesPerDepartment() {
 // Adds up the net salary of every payslip in one month (YYYY-MM).
 // The numbers are added in JavaScript so there is no pipeline to explain.
 async function getMonthlyPayrollTotal(month) {
-  const payslips = await Payroll.find({ month });
+  const payslips = await Payroll.find({ month, status: { $nin: ["Rejected", "Voided"] } });
   let total = 0;
 
   for (const payslip of payslips) {

@@ -1,3 +1,8 @@
+import BudgetRequest from "../models/BudgetRequest.js";
+import Payroll from "../models/Payroll.js";
+import { lockBudget } from "../utils/budgetHelpers.js";
+import transaction from "../utils/transaction.js";
+import { audit } from "../utils/workflowEvents.js";
 import Employee from "../models/Employee.js";
 import User from "../models/User.js";
 import Department from "../models/Department.js";
@@ -29,32 +34,35 @@ async function readDepartmentDetails(body) {
 // Creates a department from the submitted form values.
 async function createDepartment(request, response) {
   try {
-    const department = await Department.create(await readDepartmentDetails(request.body));
+    if (request.user.role !== "Admin" && Number(request.body.budget) !== 0) throw new Error("Admin must set the department budget. Create it with a zero budget first.");
+    if (Number(request.body.budget) > 0 && !request.body.reason?.trim()) throw new Error("Enter an initial budget justification.");
+    const department = await transaction(async (session) => {
+      const [saved] = await Department.create([await readDepartmentDetails(request.body)], { session });
+      await audit(session, request.user.userId, "department.create", "Department", saved._id, null, saved.toObject(), request.body.reason);
+      return saved;
+    });
     const savedDepartment = await department.populate("manager", "name email");
     response.status(201).json(savedDepartment);
   } catch (error) {
-    response.status(400).json({ message: "Could not create department." });
+    response.status(400).json({ message: error.message });
   }
 }
 
 // Updates one department using its MongoDB id.
 async function updateDepartment(request, response) {
   try {
-    const department = await Department.findByIdAndUpdate(
-      request.params.id,
-      await readDepartmentDetails(request.body),
-      {
-        new: true,
-        runValidators: true,
-      },
-    ).populate("manager", "name email");
-    if (!department) {
-      response.status(404).json({ message: "Department not found." });
-      return;
-    }
+    const department = await transaction(async (session) => {
+      const saved = await Department.findById(request.params.id).session(session);
+      if (!saved) throw new Error("Department not found.");
+      if (Number(request.body.budget) !== saved.budget) throw new Error("Use the Admin budget adjustment form with a justification.");
+      const before = saved.toObject();
+      Object.assign(saved, await readDepartmentDetails(request.body)); await saved.save({ session });
+      await audit(session, request.user.userId, "department.update", "Department", saved._id, before, saved.toObject());
+      return saved.populate("manager", "name email");
+    });
     response.json(department);
   } catch (error) {
-    response.status(400).json({ message: "Could not update department." });
+    response.status(400).json({ message: error.message });
   }
 }
 
@@ -65,14 +73,20 @@ async function deleteDepartment(request, response) {
       response.status(400).json({ message: "Move the department's employees before deleting it." });
       return;
     }
-    const department = await Department.findByIdAndDelete(request.params.id);
+    const department = await transaction(async (session) => {
+      const saved = await lockBudget(request.params.id, session);
+      if (await Employee.exists({ department: saved._id }).session(session) || await BudgetRequest.exists({ department: saved._id }).session(session) || await Payroll.exists({ department: saved._id }).session(session)) throw new Error("Department has employee or financial history and cannot be deleted.");
+      await Department.deleteOne({ _id: saved._id }, { session });
+      await audit(session, request.user.userId, "department.delete", "Department", saved._id, saved.toObject(), null);
+      return saved;
+    });
     if (!department) {
       response.status(404).json({ message: "Department not found." });
       return;
     }
     response.json({ message: "Department deleted." });
   } catch (error) {
-    response.status(400).json({ message: "Could not delete department." });
+    response.status(400).json({ message: error.message });
   }
 }
 

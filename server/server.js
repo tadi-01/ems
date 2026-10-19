@@ -1,3 +1,7 @@
+import settingsRoutes from "./routes/settingsRoutes.js";
+import { startPayrollScheduler } from "./utils/payrollScheduler.js";
+import budgetRoutes from "./routes/budgetRoutes.js";
+import workflowRoutes from "./routes/workflowRoutes.js";
 import { validateRuntimeSettings } from "./utils/runtimeSettings.js";
 import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes.js";
@@ -30,6 +34,9 @@ app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/workflow", workflowRoutes);
+app.use("/api/budgets", budgetRoutes);
+app.use("/api/settings", settingsRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/attendance", attendanceRoutes);
@@ -48,6 +55,7 @@ async function startServer() {
   validateRuntimeSettings();
   await connectDatabase();
   for (const model of Object.values(mongoose.models)) await model.init();
+  startPayrollScheduler();
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });

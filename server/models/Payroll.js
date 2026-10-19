@@ -8,6 +8,19 @@ const payrollSchema = new mongoose.Schema(
       required: true,
     },
     // The pay month as text in the form YYYY-MM, for example 2026-10.
+    scheduled: { type: Boolean, default: false },
+    requiresReview: { type: Boolean, default: false },
+    status: { type: String, enum: ["Pending approval", "Approved", "Rejected", "Voided"], default: "Pending approval" },
+    department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
+    employeeSnapshot: { name: String, employeeId: String, designation: String },
+    budgetExceeded: { type: Boolean, default: false },
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    approvedAt: Date,
+    decisionReason: String,
+    overtime: { type: Number, default: 0, min: 0 },
+    pension: { type: Number, default: 0, min: 0 },
+    loanDeductions: { type: Number, default: 0, min: 0 },
+    revision: { type: Number, default: 0 },
     month: { type: String, required: true },
     // The basic salary is copied onto the payslip so that a later change to
     // Employee.salary does not rewrite old payslips.

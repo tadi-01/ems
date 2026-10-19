@@ -1,6 +1,6 @@
 import AuthLayout from "../components/AuthLayout";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
 
 // Shows the registration form and creates a new Employee account.
@@ -31,16 +31,17 @@ function Register() {
   }
 
   return (
-    <AuthLayout>
+    <AuthLayout registering>
       <form className="auth-box" onSubmit={submitForm}>
-        <p className="eyebrow">Your workspace</p>
-        <h2>Join your team</h2>
+        <p className="eyebrow">YOUR TEAM WORKSPACE STARTS HERE</p>
+        <h2>Make yourself at home.</h2>
         <p className="auth-description">Create your employee account to get started.</p>
         {error && <p className="error" role="alert">{error}</p>}
         <label>
           Name
           <input
             name="name"
+            placeholder="Enter your full name"
             autoComplete="name"
             value={form.name}
             onChange={updateField}
@@ -65,18 +66,19 @@ function Register() {
             name="password"
             type="password"
             autoComplete="new-password"
+            placeholder="Create a password"
             minLength="6"
+            aria-describedby="password-help"
             value={form.password}
             onChange={updateField}
             required
           />
         </label>
+        <p id="password-help" className="auth-helper">Use at least 6 characters.</p>
         <button className="button" type="submit" disabled={submitting}>
-          {submitting ? "Creating account..." : "Create account"}
+          {submitting ? "Creating account..." : "Create account"}<span aria-hidden="true">→</span>
         </button>
-        <p>
-          Already registered? <Link to="/login">Log in</Link>
-        </p>
+        <p className="auth-account-note">Once registered, Admin or HR can link your account to your employee record.</p>
       </form>
     </AuthLayout>
   );

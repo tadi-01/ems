@@ -5,7 +5,7 @@ EMS manages employees, departments, attendance, leave and payroll using React, V
 ## Requirements
 
 - Node.js 20.19+ or a newer supported LTS version and npm (verified locally on Node.js 24).
-- MongoDB locally or Atlas credentials for an explicitly named database.
+- MongoDB Atlas or a MongoDB replica set, with credentials for an explicitly named database. Financial writes use transactions; a standalone MongoDB instance is not sufficient.
 - Two terminals. Install packages inside `server` and `client`; there is no root package.json.
 
 ## Local setup
@@ -89,7 +89,39 @@ Keep real values in ignored `.env` files or hosting environment settings.
 
 Frontend `VITE_API_URL` must end in `/api`. It is compiled into builds, so changing it on a host requires a rebuild.
 
-Leave remains **21 calendar days** by default. Settings apply to new requests without rewriting stored day counts. Tax, unpaid leave and absence deductions remain manually entered by HR. The server calculates net salary as basic salary + allowances + bonuses - deductions - tax. Audit fields identify the latest payslip editor, not a full revision history.
+Leave remains **21 calendar days** by default. Settings apply to new requests without rewriting stored day counts. Tax, unpaid leave and absence deductions remain manually entered by HR. The server calculates net salary as basic salary + bonuses + allowances + overtime - PAYE/tax - NSSA/pension - loan deductions - other deductions. Statutory amounts remain manually entered and reviewed; EMS does not supply tax tables. Sensitive changes also create separate audit events.
+
+## Payroll and budget workflow
+
+Admin handles financial decisions; no Finance role was added. Existing pages remain. Admin-only Settings was added at the project owner's request. Departments contains budget usage, expense requests and budget adjustments; Users & roles contains the read-only audit history. Payroll retains All payslips and My payslips, with itemised viewing, printing and a downloadable HTML payslip (use Print to PDF when a PDF is needed).
+
+### Monthly budgets
+
+Existing department budget values are treated as recurring monthly limits without rewriting their amounts. Monthly commitments include current employees' salaries, replaced by approved gross payroll for that employee/month, plus approved expenses. Pending optional payroll amounts and over-budget expense/hiring requests are not treated as approved spend. Historical payroll without workflow status remains included. Changes to the recurring budget affect the limit used when viewing other months; this is not a period-by-period budget ledger.
+
+New hires and salary increases that exceed the monthly limit are held as pending requests; their active employee records remain unchanged. Admin must increase or reallocate the budget with a justification before approving them. Financial writes lock the department within a MongoDB transaction to serialize competing commitments. Reallocations check the selected month's source commitments. Usage warnings appear at 80% and 90%; notifications go to Admin, HR and the assigned manager. Existing salaries remain visible and flagged when the budget is insufficient.
+
+HR can create a department with a zero initial budget; Admin assigns its budget. Budget changes use the dedicated adjustment form rather than the ordinary department editor. Approved expenses are recorded commitments, not payments.
+
+### Payroll approval and historical records
+
+HR prepares payroll; Admin approves or rejects an exact revision with a justification and a separate confirmation. Admin retains the existing preparation capability, but another Admin must review a record they prepared or last edited. Budget validation runs again during approval. An over-budget record remains pending with an explicit message; Admin must resolve the budget before approval. Approval releases a payslip to the employee and does not confirm payment.
+
+Approved and historical payslips cannot be edited or deleted. Pending/rejected records can be revised or voided; voiding retains history and the employee/month uniqueness rule. A voided record can be edited to resubmit that same month. Historical slips without workflow status remain viewable. New slips snapshot employee identity as well as amounts. Partial amount updates retain omitted values.
+
+### Schedule and Admin Settings
+
+Defaults: prepare on the 25th, approve by the 28th, planned payment on the last working day. Admin can change the days, select a fixed planned payment day, and configure public holidays. Working days exclude Saturday, Sunday and configured holidays. When the last working day falls before a configured preparation/approval day, the calendar preview brings that deadline forward. Dates use COMPANY_TIME_ZONE.
+
+Automatic preparation starts only after Admin saves and enables it in Settings. It creates missing current-month pending records after the preparation date; HR must review deductions before approval. Unique employee/month records prevent duplicate preparation across restarts. The running backend checks every minute and catches up for the current month after downtime; earlier months require manual preparation. Approval and planned-payment reminders are deduplicated by month. A sleeping or stopped hosting service cannot guarantee an exact execution time: use an always-running backend for reliable scheduling.
+
+Bank transfers, mobile money, cash disbursement, payment retries and reconciliation are deliberately outside this implementation. No money moves when a record is prepared or approved.
+
+### Navigation and security
+
+All roles share the existing shell. Sidebar items come from a role map; Admin-only screens and API operations are protected independently. The sidebar collapses on desktop and uses a mobile drawer with Escape, focus containment and scroll locking. The masthead includes identity, role, notifications and an account dropdown. Expired sessions return to Login and resume the interrupted page after authentication. Missing and forbidden destinations have dedicated messages.
+
+Employees receive only directory fields from the employee-list API; salary and account-link details are reserved for Admin/HR. Department budget visibility remains as before. Notification read state is scoped to its recipient. Audit events store the actor, action, timestamp, record, before/after values and decision justification; the application exposes no edit/delete API for these events.
 
 ## Verification
 
@@ -136,7 +168,7 @@ Use the intended existing database name. Configure Atlas credentials and network
 
 Keep plain JavaScript/JSX, simple async/await, comments explaining functions and small components (aim for roughly 150 lines). Reuse existing services and backend validation. No TypeScript, Redux or Carbon component-library migration is needed.
 
-The retained documentation is this README, `progress.md`, and `Project_Documentation.docx` (architecture, models, workflows and maintenance).
+The retained documentation is this README, `progress.md`, and `Project_Documentation.docx`. The Word guide is the 18 October architecture snapshot; this README and the latest progress entry describe the subsequent approval workflow.
 
 ## API routes
 
@@ -173,5 +205,11 @@ All routes start with `/api`. "Logged in" means any user with a valid login toke
 | GET /payroll?month= | Admin or HR | Lists all payslips, with optional month |
 | POST /payroll | Admin or HR | Creates a payslip (the server calculates net salary) |
 | PUT /payroll/:id | Admin or HR | Changes the amounts on a payslip |
-| DELETE /payroll/:id | Admin or HR | Deletes a payslip |
+| DELETE /payroll/:id | Admin or HR | Voids pending/rejected payroll and retains history |
 | GET /dashboard | Admin or HR | Returns the dashboard totals |
+
+### Added workflow endpoints
+
+All require authentication. Admin/HR can read `/api/budgets`, create `/api/budgets/expenses`, and read `/api/payroll/schedule`. Only Admin can update `/api/budgets/departments/:id`, decide `/api/budgets/requests/:id`, decide `/api/payroll/:id/decision`, read/update `/api/settings`, or read `/api/workflow/audit?page=1`. Decision bodies require `decision`, `reason`, `confirmed: true`; payroll decisions also require the reviewed `revision`.
+
+Each user can read `/api/workflow/notifications` and mark their own records through `PUT /api/workflow/notifications/:id/read` or `PUT /api/workflow/notifications/read-all`. `DELETE /api/payroll/:id` now voids pending/rejected records rather than deleting history.

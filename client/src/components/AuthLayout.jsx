@@ -1,22 +1,43 @@
-// Gives login and registration a shared identity and a focused form area.
-function AuthLayout({ children }) {
-  return <main className="auth-layout">
-    <section className="auth-intro" aria-label="About Employee Management">
-      <div className="brand"><span className="brand-mark">EM</span><span>Employee<br />Management</span></div>
-      <div className="auth-story">
-        <p className="section-label">Your people. One workspace.</p>
-        <h1>A simpler way to<br /><em>manage the workday.</em></h1>
-        <p>Keep your team, time off and payroll organised, with the information you need in one place.</p>
-        <div className="auth-features">
-          <div><span>01</span><p><strong>People & departments</strong><br />A clear view of your organisation.</p></div>
-          <div><span>02</span><p><strong>Attendance & leave</strong><br />Every workday accounted for.</p></div>
-          <div><span>03</span><p><strong>Payroll & payslips</strong><br />Monthly records, easy to access.</p></div>
+import { Link } from "react-router-dom";
+
+// Shares the reference's split layout while keeping the existing account forms.
+function AuthLayout({ children, registering = false }) {
+  return <div className="auth-shell">
+    <a className="skip-link" href="#account-form">Skip to form</a>
+    <header className="auth-header">
+      <Link to="/login" className="shell-brand">EMS <span>Employee Management</span></Link>
+      <span className="auth-header-label">Your team workspace</span>
+    </header>
+    <main className="auth-layout">
+      <section className="auth-intro" aria-labelledby="auth-story-title">
+        <div className="auth-story">
+          <p className="eyebrow"><span className="auth-dot" aria-hidden="true" />YOUR PEOPLE. ONE WORKSPACE.</p>
+          <h1 id="auth-story-title">A little structure.<br />A clearer workday.</h1>
+          <p>Keep your people, time off and payroll together, with space to focus on the work ahead.</p>
         </div>
-      </div>
-      <p className="auth-footer">Employee Management System</p>
-    </section>
-    <section className="auth-form-area">{children}</section>
-  </main>;
+        <div className="auth-art" aria-hidden="true">
+          <div className="auth-orbit" /><div className="auth-orbit auth-orbit-second" />
+          <div className="auth-tile auth-tile-back" /><div className="auth-tile auth-tile-middle" />
+          <div className="auth-tile auth-tile-front"><span>+</span></div>
+          <div className="auth-art-caption"><span>PEOPLE & ORGANISATION</span><span>TIME & PAY ↗</span></div>
+        </div>
+        <div className="auth-benefits">
+          <p><span aria-hidden="true">✓</span> A clear view of your team and departments</p>
+          <p><span aria-hidden="true">✓</span> Attendance, leave and payslips in one place</p>
+          <p className="auth-story-note">Everything you need for the working day.</p>
+        </div>
+      </section>
+      <section className="auth-form-area" aria-label={registering ? "Create an account" : "Sign in"}>
+        <div id="account-form" className="auth-form-content" tabIndex="-1">
+          {children}
+        <p className="auth-switch">{registering ? "Already have an account?" : "New to your team workspace?"}{" "}
+          <Link to={registering ? "/login" : "/register"}>{registering ? "Log in" : "Create an account"} <span aria-hidden="true">→</span></Link>
+        </p>
+        </div>
+        <footer className="auth-panel-footer"><span>Employee Management System</span><span>Need help? Contact Admin or HR.</span></footer>
+      </section>
+    </main>
+  </div>;
 }
 
 export default AuthLayout;

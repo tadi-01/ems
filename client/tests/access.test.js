@@ -39,10 +39,10 @@ test("Admin and HR retain employee and department editors", async () => {
 test("payroll management and personal view choices follow the role", async () => {
   const employee = await renderPage("/src/pages/Payroll.jsx", "Employee");
   assert.match(employee, /My payslips/);
-  assert.doesNotMatch(employee, /Create payslip|All payslips/);
+  assert.doesNotMatch(employee, /Prepare payroll|All payslips/);
   const admin = await renderPage("/src/pages/Payroll.jsx", "Admin");
   assert.match(admin, /My payslips/);
-  assert.match(admin, /Create payslip/);
+  assert.match(admin, /Prepare payroll/);
 });
 
 test("expired and damaged sessions cannot pass the route guard", () => {

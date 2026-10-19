@@ -1,3 +1,4 @@
+import AuditHistory from "../components/AuditHistory";
 import EmptyRow from "../components/EmptyRow";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
@@ -49,6 +50,7 @@ function Users() {
           </td>
         </tr>)}</tbody>
       </table></div>
+      <AuditHistory />
     </main>
   );
 }

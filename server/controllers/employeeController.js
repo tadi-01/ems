@@ -1,3 +1,8 @@
+import BudgetRequest from "../models/BudgetRequest.js";
+import transaction from "../utils/transaction.js";
+import { audit } from "../utils/workflowEvents.js";
+import { lockBudget } from "../utils/budgetHelpers.js";
+import saveBudgetedEmployee from "../utils/employeeBudget.js";
 import { readEmployeeDetails, escapeSearch } from "../utils/employeeDetails.js";
 import Attendance from "../models/Attendance.js";
 import Leave from "../models/Leave.js";
@@ -18,6 +23,7 @@ async function getAllEmployees(request, response) {
         }
       : {};
     const employees = await Employee.find(searchFilter)
+      .select(request.user?.role === "Employee" ? "employeeId name department designation email" : "")
       .populate("department", "name")
       .sort({ name: 1 });
     response.json(employees);
@@ -29,32 +35,24 @@ async function getAllEmployees(request, response) {
 // Creates an employee from the submitted form values.
 async function createEmployee(request, response) {
   try {
-    const employee = await Employee.create(await readEmployeeDetails(request.body));
+    const employee = await saveBudgetedEmployee(await readEmployeeDetails(request.body), null, request.user.userId);
+    if (employee.pendingApproval) return response.status(202).json(employee);
     const savedEmployee = await employee.populate("department", "name");
     response.status(201).json(savedEmployee);
   } catch (error) {
-    response.status(400).json({ message: "Could not create employee." });
+    response.status(400).json({ message: error.message });
   }
 }
 
 // Updates one employee using its MongoDB id.
 async function updateEmployee(request, response) {
   try {
-    const employee = await Employee.findByIdAndUpdate(
-      request.params.id,
-      await readEmployeeDetails(request.body),
-      {
-        new: true,
-        runValidators: true,
-      },
-    ).populate("department", "name");
-    if (!employee) {
-      response.status(404).json({ message: "Employee not found." });
-      return;
-    }
+    const employee = await saveBudgetedEmployee(await readEmployeeDetails(request.body), request.params.id, request.user.userId);
+    if (employee.pendingApproval) return response.status(202).json(employee);
+    await employee.populate("department", "name");
     response.json(employee);
   } catch (error) {
-    response.status(400).json({ message: "Could not update employee." });
+    response.status(400).json({ message: error.message });
   }
 }
 
@@ -67,14 +65,22 @@ async function deleteEmployee(request, response) {
         return;
       }
     }
-    const employee = await Employee.findByIdAndDelete(request.params.id);
+    const employee = await transaction(async (session) => {
+      const saved = await Employee.findById(request.params.id).session(session);
+      if (!saved) return null;
+      await lockBudget(saved.department, session);
+      for (const Model of [Attendance, Leave, Payroll, BudgetRequest]) if (await Model.exists({ employee: saved._id }).session(session)) throw new Error("Employee has linked history and cannot be deleted.");
+      await Employee.deleteOne({ _id: saved._id }, { session });
+      await audit(session, request.user.userId, "employee.delete", "Employee", saved._id, saved.toObject(), null);
+      return saved;
+    });
     if (!employee) {
       response.status(404).json({ message: "Employee not found." });
       return;
     }
     response.json({ message: "Employee deleted." });
   } catch (error) {
-    response.status(400).json({ message: "Could not delete employee." });
+    response.status(400).json({ message: error.message });
   }
 }
 

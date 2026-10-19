@@ -10,7 +10,8 @@ function readAmount(value) {
   if (!["number", "string"].includes(typeof value)) return null;
   const amount = Number(value);
   if (!Number.isFinite(amount) || amount < 0) return null;
-  return Math.round(amount * 100) / 100;
+  const cents = Math.round(amount * 100);
+  return Number.isSafeInteger(cents) ? cents / 100 : null;
 }
 
 // Works out net salary: basic + allowances + bonuses - deductions - tax.
@@ -19,7 +20,10 @@ function calculateNetSalary(amounts) {
   const net =
     amounts.basicSalary +
     amounts.allowances +
-    amounts.bonuses -
+    amounts.bonuses +
+    (amounts.overtime || 0) -
+    (amounts.pension || 0) -
+    (amounts.loanDeductions || 0) -
     amounts.deductions -
     amounts.tax;
   return Math.round(net * 100) / 100;
@@ -39,6 +43,9 @@ function readPayslipAmounts(body, defaultBasicSalary) {
     bonuses: readAmount(body.bonuses),
     deductions: readAmount(body.deductions),
     tax: readAmount(body.tax),
+    overtime: readAmount(body.overtime),
+    pension: readAmount(body.pension),
+    loanDeductions: readAmount(body.loanDeductions),
   };
 
   if (Object.values(amounts).includes(null)) {

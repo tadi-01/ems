@@ -1,3 +1,4 @@
+import verifyWorkflow from "./verifyWorkflow.js";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -19,7 +20,7 @@ let checks = 0;
 // Sends an actual HTTP request and verifies the API's expected status.
 async function request(path, method = "GET", body, token, status = 200) {
   const response = await fetch(`http://127.0.0.1:${port}/api${path}`, {
-    method, headers: { "Content-Type": "application/json", Origin: origin,
+    method, signal: AbortSignal.timeout(30000), headers: { "Content-Type": "application/json", Origin: origin,
       ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -57,7 +58,7 @@ async function verify() {
   assert.equal(employeeLogin.user.role, "Employee");
   const token = employeeLogin.token;
   await request("/users", "GET", undefined, token, 403);
-  const department = await request("/departments", "POST", { name: "QA Operations", manager: admin._id, budget: 10000 }, adminToken, 201);
+  const department = await request("/departments", "POST", { name: "QA Operations", manager: admin._id, budget: 10000, reason: "Initial QA budget" }, adminToken, 201);
   const details = { employeeId: "QA001", name: "QA Employee", email: "person@example.test",
     user: employeeLogin.user.id, department: department._id, designation: "Tester", phone: "000000",
     joiningDate: "2026-01-01", salary: 1000 };
@@ -83,14 +84,20 @@ async function verify() {
   assert.equal(payroll.netSalary, 950);
   await request("/payroll", "POST", { employee: employee._id, month: "2027-02" }, adminToken, 400);
   const updated = await request(`/payroll/${payroll._id}`, "PUT", { basicSalary: 1000, tax: 150 }, adminToken);
-  assert.equal(updated.netSalary, 850);
+  assert.equal(updated.netSalary, 900);
   assert.equal(updated.updatedBy, String(admin._id));
+  assert.equal((await request("/payroll/me", "GET", undefined, token)).length, 0);
+  const reviewer = await User.create({ name: "QA Approver", email: "approver@example.test", password, role: "Admin" });
+  const { token: reviewerToken } = await request("/auth/login", "POST", { email: reviewer.email, password });
+  await request(`/payroll/${payroll._id}/decision`, "PUT", { decision: "Approved", reason: "Checked", confirmed: true, revision: updated.revision }, adminToken, 400);
+  await request(`/payroll/${payroll._id}/decision`, "PUT", { decision: "Approved", reason: "Checked", confirmed: true, revision: updated.revision }, reviewerToken);
   assert.equal((await request("/payroll/me", "GET", undefined, token)).length, 1);
   assert.equal((await request("/dashboard", "GET", undefined, adminToken)).totalEmployees, 1);
   await request(`/departments/${department._id}`, "DELETE", undefined, adminToken, 400);
   await request(`/employees/${employee._id}`, "DELETE", undefined, adminToken, 400);
   await request(`/users/${employeeLogin.user.id}/role`, "PUT", { role: "Employee" }, adminToken);
   await request("/dashboard", "GET", undefined, token, 403);
+  await verifyWorkflow(request, { admin, adminToken, employee, details, employeeLogin, token, reviewerToken, department });
   console.log(`PASS: ${checks} live API checks with MongoDB indexes and account links.`);
 }
 

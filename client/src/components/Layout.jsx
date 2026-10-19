@@ -1,26 +1,44 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSavedUser, clearLogin } from "../services/session";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
-const menuGroups = [
-  { label: "Workspace", links: [["dashboard", "Overview"], ["employees", "Employees"], ["departments", "Departments"]] },
-  { label: "Time & pay", links: [["attendance", "Attendance"], ["leave", "Leave"], ["payroll", "Payroll"]] },
-];
+import navigation from "../services/navigation";
+import AccountMenu from "./AccountMenu";
 
 // Keeps navigation predictable on desktop and collapses it on smaller screens.
 function Layout() {
+  const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
+  const nav = useRef(null);
   const user = getSavedUser();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef(null);
   const location = useLocation();
-  const page = location.pathname.split("/")[1];
-  const title = page === "dashboard" ? "Overview" : page.charAt(0).toUpperCase() + page.slice(1);
+  const title = navigation.find((item) => item.path === location.pathname)?.label || "Workspace";
+  const items = navigation.filter((item) => item.roles.includes(user?.role));
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+  useEffect(() => {
+    if (menuOpen) nav.current?.querySelector("a")?.focus();
+    const previous = document.body.style.overflow;
+    if (menuOpen && window.matchMedia("(max-width: 768px)").matches) document.body.style.overflow = "hidden";
+    function resize() { setMenuOpen(false); }
+    window.addEventListener("resize", resize);
+    return () => { document.body.style.overflow = previous; window.removeEventListener("resize", resize); };
+  }, [menuOpen]);
   const initials = (user?.name || "User").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("");
 
   // Ends the local session and returns to the login page.
-  function logOut() { clearLogin(); window.location.href = "/login"; }
+  function logOut() { clearLogin(); navigate("/login", { replace: true }); }
   // Returns keyboard focus when the compact menu is closed with Escape.
   function closeWithEscape(event) {
+    if (menuOpen && event.key === "Tab" && window.matchMedia("(max-width: 768px)").matches) {
+      const links = [...nav.current.querySelectorAll("a")];
+      const first = links[0], last = links[links.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
     if (event.key === "Escape") { setMenuOpen(false); menuButton.current?.focus(); }
   }
   // Closes the compact navigation and focuses the destination content.
@@ -29,7 +47,7 @@ function Layout() {
     document.getElementById("workspace-content")?.focus();
   }
 
-  return <div className="layout" onKeyDown={closeWithEscape}>
+  return <div className={`layout ${collapsed ? "sidebar-collapsed" : ""}`} onKeyDown={closeWithEscape}>
     <a className="skip-link" href="#workspace-content">Skip to content</a>
     <header className="topbar no-print">
       <div className="shell-identity">
@@ -37,21 +55,18 @@ function Layout() {
           aria-controls="main-navigation" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? "Close menu" : "Menu"}
         </button>
+        <button className="desktop-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>☰</button>
         <NavLink to="/dashboard" className="shell-brand" onClick={followLink}>EMS <span>Employee Management</span></NavLink>
       </div>
       <p className="shell-location">{title}</p>
-      <div className="account-menu"><span className="role-label">{user?.role}</span>
-        <button className="button button-secondary" onClick={logOut}>Log out</button>
-      </div>
+      <AccountMenu user={user} onLogout={logOut} />
     </header>
-    <nav id="main-navigation" className={`sidebar no-print ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
-      {menuGroups.map((group) => <div className="nav-group" key={group.label}>
-        <p className="nav-label">{group.label}</p>
-        {group.links.map(([path, label]) => <NavLink key={path} to={`/${path}`} onClick={followLink} className="sidebar-link">{label}</NavLink>)}
+    {menuOpen && <button className="drawer-backdrop no-print" aria-label="Close navigation" onClick={() => { setMenuOpen(false); menuButton.current?.focus(); }} />}
+    <nav ref={nav} id="main-navigation" className={`sidebar no-print ${menuOpen ? "is-open" : ""}`} aria-label="Main navigation">
+      {[...new Set(items.map((item) => item.group))].map((group) => <div className="nav-group" key={group}>
+        <p className="nav-label">{group}</p>
+        {items.filter((item) => item.group === group).map((item) => <NavLink end key={item.path} to={item.path} onClick={followLink} className="sidebar-link">{item.label}</NavLink>)}
       </div>)}
-      {user?.role === "Admin" && <div className="nav-group"><p className="nav-label">Administration</p>
-        <NavLink to="/users" className="sidebar-link" onClick={followLink}>Users & roles</NavLink>
-      </div>}
       <div className="sidebar-footer"><span className="avatar">{initials}</span>
         <div><strong>{user?.name}</strong><span>{user?.role} workspace</span></div>
       </div>

@@ -23,7 +23,7 @@ async function verify() {
         localStorage.setItem("user", JSON.stringify(user));
       }, data.user);
       const routes = ["dashboard", "employees", "departments", "attendance", "leave", "payroll", "login", "register"];
-      if (role === "Admin") routes.push("users");
+      if (role === "Admin") routes.push("users", "settings");
       for (const width of [1440, 1280, 1024, 768, 390, 320]) {
         await page.setViewportSize({ width, height: 900 });
         for (const route of routes) {
@@ -75,7 +75,7 @@ async function verify() {
         await page.goto(`${base}/payroll`); await page.waitForLoadState("networkidle");
         await page.getByRole("button", { name: "My payslips", exact: true }).click();
         await page.waitForLoadState("networkidle");
-        assert.equal(await page.getByRole("button", { name: "Create payslip" }).count(), 0);
+        assert.equal(await page.getByRole("button", { name: "Prepare payroll" }).count(), 0);
         await page.getByRole("button", { name: "View", exact: true }).click();
         await page.emulateMedia({ media: "print" });
         assert.equal(await page.locator(".topbar").isVisible(), false);

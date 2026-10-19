@@ -10,7 +10,7 @@ const emptyForm = {
   allowances: "",
   bonuses: "",
   deductions: "",
-  tax: "",
+  tax: "", overtime: "", pension: "", loanDeductions: "",
 };
 
 // Form for Admin or HR to create a payslip, or change the amounts on one.
@@ -78,6 +78,7 @@ function PayrollForm({ editing, onSaved, onCancel }) {
         {label}
         <input
           name={name}
+          disabled={saving}
           type="number"
           min="0"
           step="0.01"
@@ -98,7 +99,7 @@ function PayrollForm({ editing, onSaved, onCancel }) {
           name="employee"
           value={form.employee}
           onChange={updateField}
-          disabled={Boolean(editing)}
+          disabled={Boolean(editing) || saving}
           required
         >
           <option value="">Choose an employee</option>
@@ -109,17 +110,20 @@ function PayrollForm({ editing, onSaved, onCancel }) {
           ))}
         </select>
       </label>
-      <MonthField value={form.month} onChange={updateField} disabled={Boolean(editing)} required />
+      <MonthField value={form.month} onChange={updateField} disabled={Boolean(editing) || saving} required />
       {amountField("basicSalary", "Basic salary", true)}
       {amountField("allowances", "Allowances", false)}
       {amountField("bonuses", "Bonuses", false)}
       {amountField("deductions", "Deductions (including unpaid leave and absences)", false)}
-      {amountField("tax", "Tax amount", false)}
+      {amountField("overtime", "Overtime pay", false)}
+      {amountField("tax", "PAYE / tax amount", false)}
+      {amountField("pension", "NSSA / pension deduction", false)}
+      {amountField("loanDeductions", "Loan deductions", false)}
       <button className="button" type="submit" disabled={saving}>
-        {saving ? "Saving..." : editing ? "Update payslip" : "Create payslip"}
+        {saving ? "Saving..." : editing ? "Update payslip" : "Prepare payroll"}
       </button>
       {editing && (
-        <button className="button" type="button" onClick={onCancel}>
+        <button className="button" type="button" disabled={saving} onClick={onCancel}>
           Cancel
         </button>
       )}

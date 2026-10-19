@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import AuditEvent from "../models/AuditEvent.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
@@ -46,7 +48,9 @@ test("a department manager cannot be demoted before reassignment", async (contex
 });
 
 test("Admin can assign HR and invalid roles are rejected", async (context) => {
-  context.mock.method(User, "findByIdAndUpdate", (id, update) => ({ select: async () => ({ _id: id, role: update.role }) }));
+  context.mock.method(mongoose.connection, "transaction", async (work) => work(null));
+  context.mock.method(AuditEvent, "create", async (rows) => rows);
+  context.mock.method(User, "findById", (id) => ({ select: () => ({ session: async () => ({ _id: id, role: "Employee", toObject() { return { role: this.role }; }, async save() {} }) }) }));
   const response = createResponse();
   const request = { body: { role: "HR" }, params: { id: "b" }, user: { userId: "a" } };
   await updateUserRole(request, response);
