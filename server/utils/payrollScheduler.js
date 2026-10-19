@@ -26,7 +26,7 @@ async function prepareScheduledPayroll() {
           const usage = await budgetUsage(department, month, session);
           const [slip] = await Payroll.create([{ employee: employee._id, department: employee.department, month,
             basicSalary: employee.salary, netSalary: employee.salary, createdBy: settings.updatedBy,
-            employeeSnapshot: { name: employee.name, employeeId: employee.employeeId, designation: employee.designation },
+            employeeSnapshot: { name: employee.name, employeeId: employee.employeeId },
             scheduled: true, requiresReview: false, budgetExceeded: usage.exceeded,
             companyName: process.env.COMPANY_NAME || "", currency: process.env.PAYROLL_CURRENCY || "" }], { session });
           await audit(session, settings.updatedBy, "payroll.scheduled.prepare", "Payroll", slip._id, null, slip.toObject(), "Automatic preparation; deductions require review before approval.");

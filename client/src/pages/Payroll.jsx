@@ -83,9 +83,8 @@ function Payroll() {
       {notice && <p className="notice" role="status">{notice}</p>}
       {canManage && <div className="view-switch" aria-label="Payslip view">
         <button className={`button ${showMine ? "button-secondary" : ""}`} aria-pressed={!showMine} onClick={() => { setShowMine(false); setEditing(null); }}>All payslips</button>
-        <button className={`button ${showMine ? "" : "button-secondary"}`} aria-pressed={showMine} onClick={() => { setShowMine(true); setEditing(null); }}>My payslips</button>
       </div>}
-      <h2>{showMine ? "My payslips" : "All payslips"}</h2>
+      <h2>{canManage ? "All payslips" : "My payslips"}</h2>
       {canManage && !showMine && <DepartmentPayroll role={user.role} refreshKey={payslips} onEdit={editPayslip} onView={setViewing} onChanged={() => loadPayslips(monthFilter)} />}
       {canManage && !showMine && (
         <>

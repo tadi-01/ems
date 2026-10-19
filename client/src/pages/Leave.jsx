@@ -78,7 +78,7 @@ function Leave() {
       <p className="page-description">Plan time away, check your balance and follow the progress of each request.</p>
       {error && <p className="error" role="alert">{error}</p>}
       {message && <p className="notice" role="status">{message}</p>}
-      {noEmployee && (
+      {!canReview && noEmployee && (
         <p>
           Ask Admin or HR to link your account on the Employees page before applying for leave.
         </p>

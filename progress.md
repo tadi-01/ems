@@ -236,3 +236,17 @@ No payment-provider integration was added. Admin still confirms completed extern
 - Kept the README conventions: React/Vite with plain CSS, Express/Mongoose, small components, existing routes/services, and no dependency or framework migration.
 
 Validation for this pass: backend unit tests, frontend unit tests, production build, and review of the final working tree are required before commit. The change will be committed without rewriting history so it can be safely reverted with `git revert <commit>`.
+
+## Employee registration and profile linking — 19 October 2026
+
+- Added a required phone number field to public registration and validated/stored it on the user account.
+- Included registered phone numbers in safe account responses used by Admin/HR.
+- Selecting a linked account in Employees now autofills the employee name, email, and phone from the account; the fields remain editable.
+- Removed designation from employee creation/editing, employee listings, payroll snapshots, payslips, and payslip downloads. Existing historical MongoDB documents may retain the old field, but new records no longer create or display it.
+- Kept the existing React/Vite + Express/Mongoose structure and did not add dependencies.
+
+## Role-specific leave and payroll visibility — 19 October 2026
+
+- Admin and HR users no longer see the employee-only account-link reminder on the Leave page.
+- Admin and HR users no longer see the My payslips switch or heading; their Payroll page opens directly on All payslips.
+- Employee leave and personal payslip behavior remains unchanged.

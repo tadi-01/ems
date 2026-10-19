@@ -12,7 +12,7 @@ const payrollSchema = new mongoose.Schema(
     requiresReview: { type: Boolean, default: false },
     status: { type: String, enum: ["Pending approval", "Approved", "Rejected", "Voided"], default: "Pending approval" },
     department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
-    employeeSnapshot: { name: String, employeeId: String, designation: String },
+    employeeSnapshot: { name: String, employeeId: String },
     budgetExceeded: { type: Boolean, default: false },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     approvedAt: Date,
