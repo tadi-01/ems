@@ -253,3 +253,8 @@ Validation for this pass: backend unit tests, frontend unit tests, production bu
 - Admin and HR no longer fetch or render the My leave history table; their Leave page is reserved for leave review.
 - Admin and HR no longer see or use the Apply for leave form.
 - Removed the "Recorded net, not payments" qualifier from the Monthly payroll dashboard card.
+
+## Masthead visual refresh — 19 October 2026
+
+- Refined the application header with a clearer EMS mark, stronger identity hierarchy, centered current-page context, improved spacing, and more visible hover/focus states.
+- Increased header breathing room and synchronized sidebar/content offsets across desktop and mobile layouts.
