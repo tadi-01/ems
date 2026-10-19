@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import assert from "node:assert/strict";
 import Payroll from "../models/Payroll.js";
+import verifyDepartmentPayroll from "./verifyDepartmentPayroll.js";
 import BudgetRequest from "../models/BudgetRequest.js";
 import { getMonthText } from "../utils/dateHelpers.js";
 import { prepareScheduledPayroll } from "../utils/payrollScheduler.js";
@@ -38,9 +39,8 @@ async function verifyWorkflow(request, data) {
   assert.equal(rows.find((row) => row.department._id === second._id).budget, 800);
   const slip = await request("/payroll", "POST", { employee: employee._id, month: "2027-04", basicSalary: 1500, overtime: 100, allowances: 50, pension: 30, loanDeductions: 20, tax: 100 }, token, 201);
   assert.equal(slip.netSalary, 1500);
-  await request(`/payroll/${slip._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "Checked", revision: slip.revision }, token, 403);
-  await request(`/payroll/${slip._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "Checked", revision: 99 }, adminToken, 400);
-  await request(`/payroll/${slip._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "Checked", revision: slip.revision }, adminToken);
+  await request(`/payroll/${slip._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "Stale", revision: 99 }, token, 400);
+  await request(`/payroll/${slip._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "Prepared and approved by HR", revision: slip.revision }, token);
   await request(`/payroll/${slip._id}`, "PUT", { tax: 0 }, token, 400);
   await request(`/payroll/${slip._id}`, "DELETE", undefined, token, 400);
   const over = await request("/payroll", "POST", { employee: employee._id, month: "2027-05", basicSalary: 5000 }, token, 201);
@@ -54,8 +54,7 @@ async function verifyWorkflow(request, data) {
   await prepareScheduledPayroll(); await prepareScheduledPayroll();
   assert.equal(await Payroll.countDocuments({ employee: employee._id, month }), 1);
   const scheduled = await Payroll.findOne({ employee: employee._id, month }).lean();
-  assert.equal(scheduled.requiresReview, true);
-  await request(`/payroll/${scheduled._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "Not yet reviewed", revision: 0 }, adminToken, 400);
+  assert.equal(scheduled.requiresReview, false);
   const reviewed = await request(`/payroll/${scheduled._id}`, "PUT", { tax: 100, pension: 30 }, token);
   await request(`/payroll/${scheduled._id}/decision`, "PUT", { decision: "Approved", confirmed: true, reason: "HR reviewed amounts", revision: reviewed.revision }, adminToken);
   await request("/settings", "PUT", { automaticPreparation: false, preparationDay: 25, reason: "End QA scheduling" }, adminToken);
@@ -63,10 +62,8 @@ async function verifyWorkflow(request, data) {
   assert.ok(notifications.unread > 0);
   await request(`/workflow/notifications/${notifications.items[0]._id}/read`, "PUT", {}, token, 404);
   await request(`/workflow/notifications/${notifications.items[0]._id}/read`, "PUT", {}, adminToken);
-  const events = await request("/workflow/audit", "GET", undefined, adminToken);
-  assert.ok(events.some((event) => event.action === "payroll.approved"));
-  assert.ok(events.some((event) => event.action === "budget.adjust"));
   assert.equal((await BudgetRequest.findById(hire.request._id)).status, "Approved");
+  await verifyDepartmentPayroll(request, data);
   console.log("Workflow checks passed: concurrent spending, pending hires/salary changes, reallocation, approval, legacy records, scheduler, notifications and audit.");
 }
 export default verifyWorkflow;

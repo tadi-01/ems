@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 
-// Gives missing and forbidden destinations a useful route back to the workspace.
 function RouteError({ forbidden = false }) {
   return <main className="content-page">
     <p className="section-label">{forbidden ? "403" : "404"}</p>

@@ -1,7 +1,6 @@
 import express from "express";
 import Notification from "../models/Notification.js";
-import AuditEvent from "../models/AuditEvent.js";
-import { protectRoute, allowRoles } from "../middleware/authMiddleware.js";
+import { protectRoute } from "../middleware/authMiddleware.js";
 const router = express.Router();
 router.use(protectRoute);
 // Returns a recipient's recent notifications and the full unread count.
@@ -25,13 +24,5 @@ router.put("/notifications/:id/read", async (request, response) => {
     if (!item) return response.status(404).json({ message: "Notification not found." });
     response.json(item);
   } catch { response.status(400).json({ message: "Could not update notification." }); }
-});
-// Admin can inspect sensitive events from the existing administration screen.
-router.get("/audit", allowRoles("Admin"), async (request, response) => {
-  try {
-    const page = Math.max(1, Number(request.query.page) || 1);
-    const rows = await AuditEvent.find().populate("actor", "name email").sort({ createdAt: -1 }).skip((page - 1) * 50).limit(50);
-    response.json(rows);
-  } catch { response.status(500).json({ message: "Could not load audit history." }); }
 });
 export default router;

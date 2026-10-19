@@ -11,8 +11,6 @@ import LeaveReview from "../components/LeaveReview";
 
 const emptyForm = { leaveType: "Annual", startDate: "", endDate: "", reason: "" };
 
-// Lets an employee apply for leave, cancel Pending requests and see their
-// history. Admin and HR also see the review section below.
 function Leave() {
   const user = getSavedUser();
   const canReview = user?.role === "Admin" || user?.role === "HR";
@@ -25,12 +23,10 @@ function Leave() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Loads the leave history when the page opens.
   useEffect(() => {
     loadMyLeaves();
   }, []);
 
-  // Requests the employee's history and balance from the backend.
   async function loadMyLeaves() {
     try {
       const data = await getMyLeaves();
@@ -43,12 +39,10 @@ function Leave() {
     }
   }
 
-  // Updates one form field when the user types or selects a value.
   function updateField(event) {
     setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  // Sends the leave request, then refreshes the history and the review list.
   async function submitForm(event) {
     event.preventDefault();
     if (saving) return;
@@ -66,7 +60,6 @@ function Leave() {
     } finally { setSaving(false); }
   }
 
-  // Cancels a Pending request after a simple confirmation.
   async function cancelRequest(id) {
     if (!window.confirm("Cancel this leave request?")) return;
     setError("");

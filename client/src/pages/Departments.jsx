@@ -7,7 +7,6 @@ import { getSavedUser } from "../services/session";
 
 const emptyForm = { name: "", manager: "", budget: "0", reason: "" };
 
-// Lists departments for everyone, with an editor only for Admin and HR.
 function Departments() {
   const canManage = ["Admin", "HR"].includes(getSavedUser()?.role);
   const [departments, setDepartments] = useState([]);
@@ -19,7 +18,6 @@ function Departments() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => { loadDepartments(); }, []);
-  // Loads calculated counts and eligible managers without exposing account details to employees.
   async function loadDepartments() {
     setLoading(true);
     try {
@@ -27,9 +25,7 @@ function Departments() {
       if (canManage) setManagers((await getAllUsers()).filter((user) => ["Admin", "HR"].includes(user.role)));
     } catch (requestError) { setError(requestError.response?.data?.message || "Could not load departments."); } finally { setLoading(false); }
   }
-  // Updates one field in the shared form state.
   function updateField(event) { setForm({ ...form, [event.target.name]: event.target.value }); }
-  // Saves a new department or updates the selected department.
   async function submitForm(event) {
     event.preventDefault();
     if (saving) return;
@@ -44,12 +40,10 @@ function Departments() {
       setNotice("Department saved.");
     } catch (requestError) { setError(requestError.response?.data?.message || "Could not save department."); } finally { setSaving(false); }
   }
-  // Copies only editable values into the department form.
   function startEditing(department) {
     setEditingId(department._id);
     setForm({ name: department.name, manager: department.manager?._id || "", budget: department.budget });
   }
-  // Reports deletion errors, including departments which still have employees.
   async function removeDepartment(id) {
     if (!window.confirm("Delete this department?")) return;
     setError("");

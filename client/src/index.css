@@ -321,4 +321,14 @@ form.data-form > .button { justify-self: start; }
 .confirmation input { min-height: 24px; width: 24px; flex: none; }
 details { margin: 24px 0; }
 summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
-.audit-values { max-width: 100%; overflow: auto; padding: 16px; background: var(--color-surface); }
+.masthead-panel { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.notification-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--color-border); }
+.notification-heading h2 { margin: 0; font-size: 1.1rem; }
+.notification-heading button, .notification-meta button { flex: none; min-height: 36px; padding: 6px 8px; }
+.notification-list { max-height: min(440px, calc(100svh - 180px)); overflow-y: auto; overscroll-behavior: contain; }
+.notification-row a { color: var(--color-text); line-height: 1.5; text-decoration: none; }
+.notification-row a:hover { text-decoration: underline; }
+.notification-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 768px) {
+  .masthead-panel { position: fixed; top: 56px; right: 8px; width: calc(100vw - 16px); padding: 16px; }
+}

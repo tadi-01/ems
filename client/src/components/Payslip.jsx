@@ -18,7 +18,7 @@ function Payslip({ payslip, onClose }) {
       <section className="payslip">
         {payslip.companyName && <h2>{payslip.companyName}</h2>}
         <h1>Payslip</h1>
-        <p>Status: {payslip.status || "Historical"}. This document is not confirmation of payment.</p>
+          <p>Status: {payslip.status || "Historical"}. {payslip.paidAt ? `External payment recorded: ${payslip.paymentReference}.` : "External payment has not been recorded."}</p>
         <p>Issued: {payslip.createdAt ? new Date(payslip.createdAt).toLocaleDateString() : "Not recorded"}
           {payslip.currency && <> | Currency: {payslip.currency}</>}
         </p>

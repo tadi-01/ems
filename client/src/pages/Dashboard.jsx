@@ -4,7 +4,6 @@ import { getSavedUser } from "../services/session";
 import { useEffect, useState } from "react";
 import { getDashboardSummary } from "../services/dashboardService";
 
-// Shows one total as a small card with a label above the number.
 function SummaryCard({ label, value, detail }) {
   return (
     <div className="card">
@@ -15,7 +14,6 @@ function SummaryCard({ label, value, detail }) {
   );
 }
 
-// The home page. Admin and HR see company totals; other users see a welcome.
 function Dashboard() {
   const user = getSavedUser();
   const canSeeTotals = user?.role === "Admin" || user?.role === "HR";
@@ -23,12 +21,10 @@ function Dashboard() {
   const [loading, setLoading] = useState(canSeeTotals);
   const [error, setError] = useState("");
 
-  // Loads the totals when the page opens (Admin and HR only).
   useEffect(() => {
     if (canSeeTotals) loadSummary();
   }, []);
 
-  // Requests the dashboard totals from the backend.
   async function loadSummary() {
     setLoading(true);
     setError("");

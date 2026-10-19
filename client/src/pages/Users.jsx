@@ -1,11 +1,9 @@
-import AuditHistory from "../components/AuditHistory";
 import EmptyRow from "../components/EmptyRow";
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { getSavedUser } from "../services/session";
 import { getAllUsers, updateUserRole } from "../services/userService";
 
-// Gives Admins a role editor while keeping their own account protected.
 function Users() {
   const current = getSavedUser();
   const [users, setUsers] = useState([]);
@@ -14,13 +12,11 @@ function Users() {
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   useEffect(() => { if (current?.role === "Admin") loadUsers(); }, []);
-  // Loads only safe account fields, never password hashes.
   async function loadUsers() {
     setLoading(true);
     try { setUsers(await getAllUsers()); }
     catch (requestError) { setError(requestError.response?.data?.message || "Could not load users."); } finally { setLoading(false); }
   }
-  // Saves the selected role and reloads the list to show the server's result.
   async function changeRole(id, role) {
     setError("");
     setNotice("");
@@ -50,7 +46,6 @@ function Users() {
           </td>
         </tr>)}</tbody>
       </table></div>
-      <AuditHistory />
     </main>
   );
 }

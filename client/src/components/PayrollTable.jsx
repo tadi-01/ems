@@ -32,7 +32,7 @@ function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView
                 <td>{formatMoney(payslip.deductions)}</td>
                 <td>{formatMoney(payslip.tax)}</td>
                 <td>{formatMoney(payslip.netSalary)}</td>
-                <td>{payslip.status || "Historical"}{payslip.requiresReview && " · HR review required"}{payslip.budgetExceeded && " · Budget exceeded"}</td>
+                <td>{payslip.status || "Historical"}{payslip.budgetExceeded && " · Budget exceeded"}{payslip.status === "Approved" && payslip.paymentState && <> · {payslip.paymentState}</>}</td>
                 <td>
                   <button onClick={() => onView(payslip)}>View</button>
                   {onReview && payslip.status === "Pending approval" && <button onClick={() => onReview(payslip)}>Review</button>}
@@ -40,7 +40,7 @@ function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView
                     <>
                       {" "}
                       <button onClick={() => onEdit(payslip)}>Edit</button>{" "}
-                      {payslip.status !== "Voided" && <button onClick={() => onDelete(payslip._id)}>
+                      {onDelete && payslip.status !== "Voided" && <button onClick={() => onDelete(payslip._id)}>
                         Void
                       </button>}
                     </>

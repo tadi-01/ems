@@ -3,20 +3,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "../services/authService";
 
-// Shows the registration form and creates a new Employee account.
-// The role is not chosen here: the server makes every new user an Employee.
 function Register() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Updates one form field when the user types.
   function updateField(event) {
     setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  // Submits registration details and opens the protected dashboard.
   async function submitForm(event) {
     event.preventDefault();
     if (submitting) return;
