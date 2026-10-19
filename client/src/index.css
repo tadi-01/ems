@@ -73,7 +73,14 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .topbar .button:hover { background: #393939; border-color: #8D8D8D; }
 .topbar .role-label { background: #393939; border: 0; color: #FFFFFF; }
 .topbar :focus-visible { outline-color: #FFFFFF; }
-.menu-toggle { display: none; }
+.menu-toggle { display: none; align-items: center; gap: 8px; }
+.menu-toggle svg, .desktop-toggle svg, .button svg, .action-card > svg, .auth-benefits svg, .auth-switch svg { flex: 0 0 auto; }
+.desktop-toggle { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; padding: 0; color: #FFFFFF; background: transparent; border: 0; cursor: pointer; }
+.account-icon-button { display: inline-flex; align-items: center; justify-content: center; }
+.action-card > svg { color: var(--color-primary); transition: transform 150ms ease; }
+.action-card:hover > svg { transform: translateX(4px); }
+.auth-benefits p { display: flex; align-items: center; gap: 8px; }
+.auth-benefits svg { color: var(--color-primary); }
 .role-label, .count-label { display: inline-block; padding: 6px 10px; background: var(--color-tint); color: #0043CE; font-size: 0.75rem; white-space: nowrap; }
 .content-page { width: min(100% - 80px, 1280px); margin: 0 auto; padding: var(--space-6) 0 64px; }
 .page-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-4); }
@@ -198,7 +205,7 @@ button, a, input, select { transition: color 150ms ease, background-color 150ms 
   .card:nth-child(-n+2) { border-bottom: 1px solid var(--color-border); }
 }
 @media (max-width: 768px) {
-  .menu-toggle { display: inline-block; min-height: 44px; padding: 0 8px; background: transparent; color: #FFFFFF; border: 1px solid #525252; cursor: pointer; }
+  .menu-toggle { display: inline-flex; min-height: 44px; padding: 0 8px; background: transparent; color: #FFFFFF; border: 1px solid #525252; cursor: pointer; }
   .shell-brand span, .shell-location { display: none; }
   .shell-identity, .account-menu { gap: 8px; }
   .sidebar { position: static; width: 100%; display: none; padding: var(--space-2) 0; margin-top: 48px; border-bottom: 1px solid var(--color-border); }

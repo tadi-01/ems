@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowRight } from "@carbon/icons-react";
 
 // Offers direct routes to the common daily tasks for the current role.
 function QuickActions({ canManage }) {
@@ -13,7 +14,7 @@ function QuickActions({ canManage }) {
   ];
   return <section className="quick-actions" aria-label="Quick actions">
     {actions.map(([to, title, description]) => <Link to={to} className="action-card" key={to}>
-      <div><strong>{title}</strong><p>{description}</p></div><span aria-hidden="true">&rarr;</span>
+      <div><strong>{title}</strong><p>{description}</p></div><ArrowRight size={20} aria-hidden="true" />
     </Link>)}
   </section>;
 }
