@@ -58,7 +58,7 @@ async function prepareDepartmentPayroll(request, response) {
 async function decideDepartmentPayroll(request, response) {
   try {
     const { month, version, reason, confirmed, decision } = request.body;
-    if (!isValidMonth(month) || !reason?.trim() || confirmed !== true || !["Approved", "Rejected"].includes(decision)) throw new Error("Confirm the month, decision and justification.");
+    if (!isValidMonth(month) || confirmed !== true || !["Approved", "Rejected"].includes(decision)) throw new Error("Confirm the month and decision.");
     await transaction(async (session) => {
       const department = await lockBudget(request.params.department, session);
       const slips = await departmentSlips(department._id, month, session);
@@ -76,7 +76,7 @@ async function decideDepartmentPayroll(request, response) {
         const before = slip.toObject();
         Object.assign(slip, { status: decision, requiresReview: false, approvedBy: request.user.userId, approvedAt: new Date(), decisionReason: reason.trim(), paymentDate: plannedDates(settings, month).plannedPayment });
         await slip.save({ session });
-        await audit(session, request.user.userId, `payroll.department.decision`, "Payroll", slip._id, before, slip.toObject(), reason);
+        await audit(session, request.user.userId, `payroll.department.decision`, "Payroll", slip._id, before, slip.toObject(), reason?.trim() || "");
         if (decision === "Approved") {
           const employee = await Employee.findById(slip.employee).session(session);
           if (employee?.user) await Notification.create([{ recipient: employee.user, message: `Your ${month} payslip is approved. Payment is tracked separately.`, path: "/payroll" }], { session });

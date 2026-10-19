@@ -254,6 +254,12 @@ Validation for this pass: backend unit tests, frontend unit tests, production bu
 - Admin and HR no longer see or use the Apply for leave form.
 - Removed the "Recorded net, not payments" qualifier from the Monthly payroll dashboard card.
 
+## Decision justification removal — 19 October 2026
+
+- Removed the Justification field from the shared Admin/HR decision form.
+- Payroll, department payroll, and budget request decision endpoints now accept confirmed Approved/Rejected decisions without a justification.
+- Decision audit records remain intact and store an empty reason when none is supplied.
+
 ## Masthead visual refresh — 19 October 2026
 
 - Refined the application header with a clearer EMS mark, stronger identity hierarchy, centered current-page context, improved spacing, and more visible hover/focus states.
