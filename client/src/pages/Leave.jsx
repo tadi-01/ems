@@ -89,7 +89,7 @@ function Leave() {
           {balance.annualAllowance} days remaining ({balance.dayMode || "calendar"} days).
         </p>
       )}
-      {!noEmployee && (
+      {!canReview && !noEmployee && (
         <LeaveForm saving={saving} form={form} onChange={updateField} onSubmit={submitForm} />
       )}
 
