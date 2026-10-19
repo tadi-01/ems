@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import { Notification, UserAvatar, Logout } from "@carbon/icons-react";
 
 // Keeps identity and workflow notifications in the existing masthead.
 function AccountMenu({ user, onLogout }) {
@@ -34,16 +35,16 @@ function AccountMenu({ user, onLogout }) {
   }}>
     <button type="button" className="account-icon-button notification-button" aria-label={`Notifications, ${data.unread} unread`} aria-expanded={panel === "notifications"}
       onClick={() => { setPanel(panel === "notifications" ? "" : "notifications"); load(); }}>
-      <span className="notification-icon" aria-hidden="true"><span /></span>
+      <Notification size={20} aria-hidden="true" />
       {data.unread > 0 && <span className="notification-count" aria-hidden="true">{data.unread > 9 ? "9+" : data.unread}</span>}
     </button>
     <button type="button" className="profile-button" aria-label={`Open profile for ${user?.name || "user"}`} aria-expanded={panel === "profile"}
       onClick={() => setPanel(panel === "profile" ? "" : "profile")}>
-      <span className="profile-avatar" aria-hidden="true">{(user?.name || "U").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("")}</span>
+      <span className="profile-avatar" aria-hidden="true"><UserAvatar size={20} /></span>
       <span className="profile-summary"><span className="masthead-name">{user?.name}</span><span className="role-label">{user?.role}</span></span>
     </button>
     {panel && <section className="masthead-panel" aria-label={panel === "profile" ? "Account" : "Notifications"}>
-      {panel === "profile" ? <><strong>{user?.name}</strong><p>{user?.email}</p><button className="button" onClick={onLogout}>Log out</button></> : <>
+      {panel === "profile" ? <><strong>{user?.name}</strong><p>{user?.email}</p><button className="button" onClick={onLogout}>Log out <Logout size={16} aria-hidden="true" /></button></> : <>
         <div className="notification-heading"><h2>Notifications</h2>{data.unread > 0 && <button onClick={markAllRead}>Mark all read</button>}</div>{error && <p role="alert">{error} <button onClick={load}>Retry</button></p>}
         {!error && !data.items.length && <p>No notifications yet.</p>}
         <div className="notification-list">{data.items.map((item) => <div className="notification-row" key={item._id}>

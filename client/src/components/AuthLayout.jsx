@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ArrowRight, Checkmark } from "@carbon/icons-react";
 
 // Shares the reference's split layout while keeping the existing account forms.
 function AuthLayout({ children, registering = false }) {
@@ -22,8 +23,8 @@ function AuthLayout({ children, registering = false }) {
           <div className="auth-art-caption"><span>PEOPLE & ORGANISATION</span><span>TIME & PAY ↗</span></div>
         </div>
         <div className="auth-benefits">
-          <p><span aria-hidden="true">✓</span> A clear view of your team and departments</p>
-          <p><span aria-hidden="true">✓</span> Attendance, leave and payslips in one place</p>
+          <p><Checkmark size={16} aria-hidden="true" /> A clear view of your team and departments</p>
+          <p><Checkmark size={16} aria-hidden="true" /> Attendance, leave and payslips in one place</p>
           <p className="auth-story-note">Everything you need for the working day.</p>
         </div>
       </section>
@@ -31,7 +32,7 @@ function AuthLayout({ children, registering = false }) {
         <div id="account-form" className="auth-form-content" tabIndex="-1">
           {children}
         <p className="auth-switch">{registering ? "Already have an account?" : "New to your team workspace?"}{" "}
-          <Link to={registering ? "/login" : "/register"}>{registering ? "Log in" : "Create an account"} <span aria-hidden="true">→</span></Link>
+          <Link to={registering ? "/login" : "/register"}>{registering ? "Log in" : "Create an account"} <ArrowRight size={16} aria-hidden="true" /></Link>
         </p>
         </div>
         <footer className="auth-panel-footer"><span>Employee Management System</span><span>Need help? Contact Admin or HR.</span></footer>
