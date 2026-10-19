@@ -82,7 +82,7 @@ Open [EMS locally](http://127.0.0.1:5173). Both local frontend origins (`localho
 2. Assign HR access through Users & roles if required.
 3. Create departments and set their monthly budgets.
 4. Create employee records and select the registered user in **Linked account**. Registration alone does not create an employee record.
-5. Link each user who needs personal attendance, leave or payslips, including Admin/HR users.
+5. Link Employees who need personal attendance, leave or payslips. Link Admin/HR accounts when they need personal leave or payslips.
 6. Configure payroll dates in Settings. Enable automatic preparation only when ready.
 
 ## Permissions
@@ -91,7 +91,8 @@ Open [EMS locally](http://127.0.0.1:5173). Both local frontend origins (`localho
 | --- | --- | --- | --- |
 | Company overview | Yes | Yes | Personal shortcuts |
 | Employee/department directory | Manage | Manage | View |
-| Personal attendance and leave | Yes | Yes | Yes |
+| Personal check-in/out and attendance screen | No | No | Yes |
+| Personal leave | Yes | Yes | Yes |
 | Team attendance and leave decisions | Yes | Yes | No |
 | Prepare, edit and approve payroll | Yes | Yes | No |
 | Own approved payslips | Yes | Yes | Yes |
@@ -189,4 +190,4 @@ Configure backend `MONGO_URI`, `JWT_SECRET` and `CLIENT_URL` (the exact frontend
 - **Port occupied:** stop the previous service before starting another.
 - **Wide table on mobile:** scroll inside the table; the page itself should remain within the viewport.
 
-`progress.md` preserves project history and earlier verification results; historical entries may describe superseded behavior. This README is the current operating guide. `PRESENTER_NOTES.md` provides a short demonstration guide. `Project_Documentation.docx` remains an earlier architecture snapshot.
+`progress.md` preserves project history and earlier verification results; historical entries may describe superseded behavior. This README is the current operating guide. `PRESENTER_NOTES.md` provides a short demonstration guide. `Project_Documentation.docx` is the illustrated project guide updated on 19 October 2026.
