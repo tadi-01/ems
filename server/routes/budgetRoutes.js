@@ -1,0 +1,10 @@
+import express from "express";
+import { protectRoute, allowRoles } from "../middleware/authMiddleware.js";
+import { getBudgets, createExpense, adjustBudget, decideRequest } from "../controllers/budgetController.js";
+const router = express.Router();
+router.use(protectRoute, allowRoles("Admin", "HR"));
+router.get("/", getBudgets);
+router.post("/expenses", createExpense);
+router.put("/departments/:id", allowRoles("Admin"), adjustBudget);
+router.put("/requests/:id", allowRoles("Admin"), decideRequest);
+export default router;

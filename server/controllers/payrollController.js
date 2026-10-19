@@ -2,131 +2,83 @@ import Employee from "../models/Employee.js";
 import Payroll from "../models/Payroll.js";
 import getEmployeeForUser from "../utils/getEmployeeForUser.js";
 import { isValidMonth, readPayslipAmounts } from "../utils/payrollHelpers.js";
-
-// The employee fields shown on a payslip. Used with populate so the payslip
-// holds the employee's name instead of only an id.
+import transaction from "../utils/transaction.js";
+import { audit, notifyManagers } from "../utils/workflowEvents.js";
+import { lockBudget, budgetUsage } from "../utils/budgetHelpers.js";
 const employeeFields = "name employeeId designation";
 
-// Creates the payslip for one employee and month (Admin or HR). The server
-// works out the net salary and the unique index blocks a second payslip for
-// the same employee and month.
+// Prepares a monthly record for Admin approval; excess costs remain visible and pending.
 async function createPayslip(request, response) {
   try {
-    const { employee: employeeId, month } = request.body;
-    if (!isValidMonth(month)) {
-      response.status(400).json({ message: "Month must look like 2026-10." });
-      return;
-    }
-
-    const employee = await Employee.findById(employeeId);
-    if (!employee) {
-      response.status(404).json({ message: "Employee not found." });
-      return;
-    }
-
-    const result = readPayslipAmounts(request.body, employee.salary);
-    if (result.error) {
-      response.status(400).json({ message: result.error });
-      return;
-    }
-
-    const payslip = await Payroll.create({
-      employee: employee._id,
-      month,
-      ...result.amounts,
-      createdBy: request.user.userId,
-      companyName: process.env.COMPANY_NAME || "",
-      currency: process.env.PAYROLL_CURRENCY || "",
+    const { employee: id, month } = request.body;
+    if (!isValidMonth(month)) throw new Error("Choose a valid YYYY-MM month.");
+    const saved = await transaction(async (session) => {
+      const employee = await Employee.findById(id).session(session);
+      if (!employee) throw new Error("Employee not found.");
+      const { amounts, error } = readPayslipAmounts(request.body, employee.salary);
+      if (error) throw new Error(error);
+      const department = await lockBudget(employee.department, session);
+      const usage = await budgetUsage(department, month, session, { employeeId: String(id), month, amounts });
+      const [slip] = await Payroll.create([{ employee: id, department: department._id, month, ...amounts,
+        employeeSnapshot: { name: employee.name, employeeId: employee.employeeId, designation: employee.designation },
+        budgetExceeded: usage.exceeded, createdBy: request.user.userId,
+        companyName: process.env.COMPANY_NAME || "", currency: process.env.PAYROLL_CURRENCY || "" }], { session });
+      await audit(session, request.user.userId, "payroll.prepare", "Payroll", slip._id, null, slip.toObject());
+      await notifyManagers(session, department, `Payroll for ${employee.name} (${month}) awaits Admin approval.${usage.exceeded ? " Budget exceeded: existing salary requires finance attention." : usage.percent >= 80 ? ` Budget usage ${usage.percent}%.` : ""}`, "/payroll");
+      return slip;
     });
-    response.status(201).json(await payslip.populate("employee", employeeFields));
-  } catch (error) {
-    if (error.code === 11000) {
-      response.status(400).json({
-        message: "A payslip for this employee and month already exists.",
-      });
-      return;
-    }
-    response.status(500).json({ message: "Could not create payslip." });
-  }
+    response.status(201).json(await saved.populate("employee", employeeFields));
+  } catch (error) { response.status(400).json({ message: error.code === 11000 ? "A payslip for this employee and month already exists." : error.message }); }
 }
 
-// Changes the amounts on an existing payslip and works out the net salary again.
-// The employee and month cannot be changed; delete and create a new payslip instead.
+// Revises only pending/rejected records and preserves omitted monetary fields.
 async function updatePayslip(request, response) {
   try {
-    const payslip = await Payroll.findById(request.params.id);
-    if (!payslip) {
-      response.status(404).json({ message: "Payslip not found." });
-      return;
-    }
-
-    const result = readPayslipAmounts(request.body, payslip.basicSalary);
-    if (result.error) {
-      response.status(400).json({ message: result.error });
-      return;
-    }
-
-    Object.assign(payslip, result.amounts);
-    payslip.updatedBy = request.user.userId;
-    await payslip.save();
-    response.json(await payslip.populate("employee", employeeFields));
-  } catch (error) {
-    response.status(400).json({ message: "Could not update payslip." });
-  }
+    const saved = await transaction(async (session) => {
+      const slip = await Payroll.findById(request.params.id).session(session);
+      if (!slip) throw new Error("Payslip not found.");
+      if (slip.$isDefault("status") || !["Pending approval", "Rejected", "Voided"].includes(slip.status)) throw new Error("Approved and historical payslips cannot be edited.");
+      const before = slip.toObject();
+      const { amounts, error } = readPayslipAmounts({ ...before, ...request.body }, slip.basicSalary);
+      if (error) throw new Error(error);
+      const department = await lockBudget(slip.department, session);
+      const usage = await budgetUsage(department, slip.month, session, { employeeId: String(slip.employee), month: slip.month, amounts });
+      Object.assign(slip, amounts, { status: "Pending approval", requiresReview: false, budgetExceeded: usage.exceeded, updatedBy: request.user.userId });
+      slip.revision += 1; await slip.save({ session });
+      await audit(session, request.user.userId, "payroll.revise", "Payroll", slip._id, before, slip.toObject());
+      await notifyManagers(session, department, `Revised payroll (${slip.month}) awaits approval.`, "/payroll");
+      return slip;
+    });
+    response.json(await saved.populate("employee", employeeFields));
+  } catch (error) { response.status(400).json({ message: error.message }); }
 }
 
-// Deletes a payslip, for example one that was made for the wrong month.
+// Voids a pending record without erasing its financial history.
 async function deletePayslip(request, response) {
   try {
-    const payslip = await Payroll.findByIdAndDelete(request.params.id);
-    if (!payslip) {
-      response.status(404).json({ message: "Payslip not found." });
-      return;
-    }
-    response.json({ message: "Payslip deleted." });
-  } catch (error) {
-    response.status(400).json({ message: "Could not delete payslip." });
-  }
+    await transaction(async (session) => {
+      const slip = await Payroll.findById(request.params.id).session(session);
+      if (!slip || slip.$isDefault("status") || !["Pending approval", "Rejected"].includes(slip.status)) throw new Error("Only pending or rejected payroll can be voided.");
+      await lockBudget(slip.department, session);
+      const before = slip.toObject(); slip.status = "Voided"; await slip.save({ session });
+      await audit(session, request.user.userId, "payroll.void", "Payroll", slip._id, before, slip.toObject());
+    });
+    response.json({ message: "Payroll voided; history retained." });
+  } catch (error) { response.status(400).json({ message: error.message }); }
 }
 
-// Returns all payslips for Admin or HR. An optional ?month= value such as
-// 2026-10 shows only that month.
+// Management lists include pending records; month filtering is unchanged.
 async function getAllPayslips(request, response) {
-  try {
-    const filter = request.query.month ? { month: request.query.month } : {};
-    const payslips = await Payroll.find(filter)
-      .populate("employee", employeeFields)
-      .sort({ month: -1, createdAt: -1 });
-    response.json(payslips);
-  } catch (error) {
-    response.status(500).json({ message: "Could not load payslips." });
-  }
+  try { response.json(await Payroll.find(request.query.month ? { month: request.query.month } : {}).populate("employee", employeeFields).sort({ month: -1, createdAt: -1 }).lean()); }
+  catch { response.status(500).json({ message: "Could not load payslips." }); }
 }
 
-// Returns only the logged-in employee's own payslips, newest month first.
+// Existing historical slips remain accessible; new records release only on approval.
 async function getMyPayslips(request, response) {
   try {
     const employee = await getEmployeeForUser(request);
-    if (!employee) {
-      response
-        .status(404)
-        .json({ message: "Ask Admin or HR to link your account on the Employees page." });
-      return;
-    }
-
-    const payslips = await Payroll.find({ employee: employee._id })
-      .populate("employee", employeeFields)
-      .sort({ month: -1 });
-    response.json(payslips);
-  } catch (error) {
-    response.status(500).json({ message: "Could not load your payslips." });
-  }
+    if (!employee) return response.status(404).json({ message: "Ask Admin or HR to link your account on the Employees page." });
+    response.json(await Payroll.find({ employee: employee._id, $or: [{ status: "Approved" }, { status: { $exists: false } }] }).populate("employee", employeeFields).sort({ month: -1 }).lean());
+  } catch { response.status(500).json({ message: "Could not load your payslips." }); }
 }
-
-export {
-  createPayslip,
-  updatePayslip,
-  deletePayslip,
-  getAllPayslips,
-  getMyPayslips,
-};
+export { createPayslip, updatePayslip, deletePayslip, getAllPayslips, getMyPayslips };

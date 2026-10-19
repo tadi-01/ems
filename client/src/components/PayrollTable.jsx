@@ -3,7 +3,7 @@ import EmptyRow from "./EmptyRow";
 function formatMoney(value) { return Number(value).toFixed(2); }
 
 // Shares the same payslip columns between personal and management views.
-function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView, onEdit, onDelete }) {
+function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView, onEdit, onDelete, onReview }) {
   return (
       <div className="table-wrap" tabIndex="0" role="region" aria-label="Scrollable records">
         <table>
@@ -17,10 +17,11 @@ function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView
               <th>Deductions</th>
               <th>Tax</th>
               <th>Net salary</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>{payslips.length === 0 && <EmptyRow columns={showEmployee ? 9 : 8}>{loading ? "Loading payslips..." : "No payslips to display. Try a different month or check with Admin or HR."}</EmptyRow>}
+          <tbody>{payslips.length === 0 && <EmptyRow columns={showEmployee ? 10 : 9}>{loading ? "Loading payslips..." : "No payslips to display. Try a different month or check with Admin or HR."}</EmptyRow>}
             {payslips.map((payslip) => (
               <tr key={payslip._id}>
                 {showEmployee && <td>{payslip.employee?.name}</td>}
@@ -31,15 +32,17 @@ function PayrollTable({ loading = false, payslips, showEmployee, canEdit, onView
                 <td>{formatMoney(payslip.deductions)}</td>
                 <td>{formatMoney(payslip.tax)}</td>
                 <td>{formatMoney(payslip.netSalary)}</td>
+                <td>{payslip.status || "Historical"}{payslip.requiresReview && " · HR review required"}{payslip.budgetExceeded && " · Budget exceeded"}</td>
                 <td>
                   <button onClick={() => onView(payslip)}>View</button>
-                  {canEdit && (
+                  {onReview && payslip.status === "Pending approval" && <button onClick={() => onReview(payslip)}>Review</button>}
+                  {canEdit && ["Pending approval", "Rejected", "Voided"].includes(payslip.status) && (
                     <>
                       {" "}
                       <button onClick={() => onEdit(payslip)}>Edit</button>{" "}
-                      <button onClick={() => onDelete(payslip._id)}>
-                        Delete
-                      </button>
+                      {payslip.status !== "Voided" && <button onClick={() => onDelete(payslip._id)}>
+                        Void
+                      </button>}
                     </>
                   )}
                 </td>

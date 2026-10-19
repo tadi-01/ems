@@ -134,28 +134,44 @@ td button:hover { background: var(--color-tint); border-color: var(--color-prima
 .status-cancelled { color: var(--color-text); background: var(--color-border-light); }
 .payslip { max-width: 600px; padding: var(--space-4); margin-bottom: var(--space-3); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); }
 
-/* Sign-in pages balance a brand panel with a focused, readable form. */
-.auth-layout { min-height: 100vh; display: grid; grid-template-columns: 1.15fr 0.85fr; }
-.auth-intro { display: flex; flex-direction: column; padding: clamp(24px, 5vw, 80px); color: var(--color-text); background: var(--color-page); border-right: 1px solid var(--color-border); }
-.auth-story { max-width: 600px; margin: auto 0; padding: 64px 0; }
-.auth-story h1 { font-size: clamp(2.6rem, 4.5vw, 4.5rem); line-height: 1.15; letter-spacing: -1px; margin-bottom: var(--space-3); }
-.auth-story > p, .auth-story .section-label { color: var(--color-nav-text); }
-.auth-story > p { max-width: 400px; }
-.auth-features { margin-top: var(--space-4); border-top: 1px solid var(--color-border); }
-.auth-features > div { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); }
-.auth-features span { color: var(--color-primary); padding-top: 3px; font: 400 0.75rem var(--font-meta); }
-.auth-features p { margin: 0; color: var(--color-nav-text); font-size: 0.9rem; }
-.auth-features strong { color: var(--color-text); font-weight: 500; }
-.auth-footer { margin: 0; color: var(--color-nav-text); font-size: 0.8rem; }
-.auth-form-area { display: grid; place-items: center; padding: var(--space-6); background: var(--color-surface); }
-.auth-box { width: min(100%, 400px); }
-.auth-box h2 { margin: 0 0 var(--space-2); font-size: 2.7rem; letter-spacing: -0.8px; }
-.auth-description { color: var(--color-muted); margin-bottom: var(--space-4); }
-.auth-box label { display: block; margin-top: var(--space-3); font-weight: 600; font-size: 0.9rem; }
-.auth-box input { display: block; width: 100%; margin-top: var(--space-1); }
-.auth-box .button { width: 100%; margin-top: var(--space-3); }
-.auth-box > p:last-child { text-align: center; margin: var(--space-3) 0 0; color: var(--color-muted); font-size: 0.9rem; }
-.auth-box a { font-weight: 600; }
+/* Account screens adapt the supplied test design without new UI dependencies. */
+.auth-header { height: 48px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #161616; color: #FFFFFF; }
+.auth-header-label { font-size: 0.8rem; color: #C6C6C6; }
+.auth-header :focus-visible { outline-color: #FFFFFF; }
+.auth-shell .skip-link { z-index: 30; }
+.auth-layout { min-height: calc(100svh - 48px); display: grid; grid-template-columns: 1fr 1fr; }
+.auth-intro { min-width: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 56px clamp(32px, 5vw, 80px) 32px; background: #EAF0FC; }
+.auth-story { max-width: 540px; }
+.auth-story .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; letter-spacing: 0.1em; }
+.auth-dot { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: var(--color-primary); }
+.auth-story h1 { margin: 24px 0; font-size: clamp(2.25rem, 3.6vw, 3.7rem); letter-spacing: -0.035em; text-wrap: balance; }
+.auth-story > p:last-child { max-width: 40ch; color: var(--color-muted); }
+.auth-art { position: relative; isolation: isolate; display: grid; place-items: center; height: 290px; margin: 24px 0; }
+.auth-tile { position: absolute; width: 42%; max-width: 215px; aspect-ratio: 1; border: 1px solid #8BB1FC; border-radius: 14%; transform: rotate(-30deg) skew(8deg, 8deg); }
+.auth-tile-back { background: #D5E3FC; translate: -20% -12%; }
+.auth-tile-middle { background: #B4CEFC; }
+.auth-tile-front { display: grid; place-items: center; background: #0F62FE; translate: 20% 12%; }
+.auth-tile-front span { color: white; font: 300 4rem var(--font-body); }
+.auth-orbit { position: absolute; z-index: -1; width: 95%; height: 58%; border: 1px solid #C6D8F8; border-radius: 50%; transform: rotate(-25deg); }
+.auth-orbit-second { width: 75%; height: 84%; transform: rotate(35deg); }
+.auth-art-caption { position: absolute; inset: auto 0 0; display: flex; justify-content: space-between; gap: 16px; font-size: 0.65rem; letter-spacing: 0.08em; color: var(--color-muted); }
+.auth-benefits p { margin: 0 0 10px; font-size: 0.9rem; }
+.auth-benefits p > span { color: var(--color-primary); margin-right: 8px; }
+.auth-benefits .auth-story-note { border-top: 1px solid #C6D8F8; padding-top: 16px; margin-top: 20px; font-size: 0.8rem; color: var(--color-muted); }
+.auth-form-area { min-width: 0; display: flex; flex-direction: column; padding: 32px clamp(24px, 4vw, 64px) 24px; background: var(--color-surface); }
+.auth-switch { margin: 16px 0 0; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--color-muted); font-size: 0.86rem; }
+.auth-switch a { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; }
+.auth-form-content { width: min(100%, 416px); margin: auto; padding: 24px 0; }
+.auth-box { width: 100%; }
+.auth-box .eyebrow { font-size: 0.7rem; letter-spacing: 0.08em; }
+.auth-box h2 { margin: 0 0 12px; font-size: clamp(1.8rem, 2.6vw, 2.4rem); letter-spacing: -0.025em; text-wrap: balance; }
+.auth-description { color: var(--color-muted); margin-bottom: 32px; }
+.auth-box label { display: block; margin-top: 24px; font-weight: 400; font-size: 0.86rem; }
+.auth-box input { display: block; width: 100%; margin-top: 8px; font-weight: 400; }
+.auth-box .button { width: 100%; justify-content: space-between; margin-top: 24px; }
+.auth-helper { margin: 8px 0 0; font-size: 0.8rem; color: var(--color-muted); }
+.auth-account-note { margin: 24px 0 0; font-size: 0.8rem; color: var(--color-muted); }
+.auth-panel-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; color: var(--color-muted); font-size: 0.75rem; }
 
 /* An asymmetric overview keeps daily actions close to the team summary. */
 h1 em, h2 em { font-weight: 300; font-style: normal; color: var(--color-text); }
@@ -191,10 +207,15 @@ button, a, input, select { transition: color 150ms ease, background-color 150ms 
   .page-heading { flex-direction: column; }
   .card { padding: var(--space-2); }
   .section-heading { flex-wrap: wrap; }
-  .auth-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .auth-intro { padding: var(--space-3); border-right: 0; border-bottom: 1px solid var(--color-border); }
-  .auth-story, .auth-footer { display: none; }
-  .auth-form-area { padding: var(--space-4) var(--space-3); align-items: start; }
+  .auth-layout { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+  .auth-intro { display: none; }
+  .auth-art, .auth-benefits, .auth-header-label { display: none; }
+  .auth-story h1 { margin: 12px 0; font-size: 2rem; }
+  .auth-story > p:last-child { margin-bottom: 0; }
+  .auth-form-area { padding: 16px 24px 24px; }
+  .auth-form-content { padding: 24px 0 40px; }
+  .auth-switch { justify-content: flex-start; }
+  .auth-header { padding: 0 16px; }
 }
 @media (max-width: 400px) {
   .account-menu .role-label { display: none; }
@@ -250,3 +271,54 @@ form.data-form > .button { justify-self: start; }
 }
 
 .session-state { max-width: 640px; margin: 48px auto; padding: 24px; }
+
+/* Short desktop windows fit the account form by reducing decorative space. */
+@media (min-width: 769px) and (max-height: 850px) {
+  .auth-intro { padding-top: 24px; padding-bottom: 20px; }
+  .auth-story h1 { font-size: clamp(2rem, 3vw, 3rem); margin: 16px 0; }
+  .auth-art { height: clamp(120px, 25vh, 210px); margin: 12px 0; }
+  .auth-tile { width: min(35%, 18vh); }
+  .auth-benefits .auth-story-note { margin-top: 12px; padding-top: 12px; }
+  .auth-form-area { padding-top: 16px; padding-bottom: 16px; }
+  .auth-form-content { padding: 8px 0 16px; }
+  .auth-box .eyebrow { margin-bottom: 8px; }
+  .auth-description { margin-bottom: 16px; }
+  .auth-box label { margin-top: 16px; }
+  .auth-box .button, .auth-account-note { margin-top: 16px; }
+  .auth-switch { margin-top: 8px; }
+}
+
+/* Existing shell controls share the same colors, dividers and button styles. */
+.skip-link { z-index: 50; }
+.desktop-toggle { min-width: 44px; min-height: 40px; background: transparent; color: white; border: 1px solid #525252; cursor: pointer; }
+.sidebar-collapsed .sidebar { display: none; }
+.sidebar-collapsed .layout-main { margin-left: 0; }
+.masthead-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.account-menu { position: relative; }
+.account-menu > button { gap: 8px; }
+.masthead-panel { position: absolute; top: calc(100% + 8px); right: 0; width: min(380px, calc(100vw - 32px)); max-height: calc(100svh - 80px); overflow-y: auto; padding: 24px; color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); }
+.masthead-panel h2 { margin-top: 0; }
+.topbar .masthead-panel .button { color: white; background: var(--color-primary); }
+.masthead-panel :focus-visible { outline-color: var(--color-primary); }
+.notification-row { display: grid; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--color-border); }
+.notification-row small { color: var(--color-muted); }
+.drawer-backdrop { display: none; }
+@media (max-width: 1100px) { .masthead-name, .shell-brand span { display: none; } }
+@media (max-width: 768px) {
+  .desktop-toggle { display: none; }
+  .drawer-backdrop { display: block; position: fixed; inset: 48px 0 0; z-index: 29; background: #0006; border: 0; }
+  .sidebar, .sidebar-collapsed .sidebar { display: none; position: fixed; inset: 48px auto 0 0; margin: 0; width: min(280px, 85vw); z-index: 30; }
+  .sidebar.is-open, .sidebar-collapsed .sidebar.is-open { display: flex; }
+  .sidebar.is-open + .layout-main { padding-top: 48px; }
+  .sidebar-footer { display: flex; }
+  .topbar { gap: 8px; padding-inline: 8px; }
+  .account-menu { gap: 4px; }
+  .topbar .button { padding-inline: 8px; font-size: .8rem; }
+  .account-menu .role-label { display: inline-block; padding: 4px; }
+}
+
+.confirmation { display: flex; align-items: center; gap: 12px; grid-column: 1 / -1; }
+.confirmation input { min-height: 24px; width: 24px; flex: none; }
+details { margin: 24px 0; }
+summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+.audit-values { max-width: 100%; overflow: auto; padding: 16px; background: var(--color-surface); }

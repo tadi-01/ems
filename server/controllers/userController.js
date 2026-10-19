@@ -1,3 +1,5 @@
+import transaction from "../utils/transaction.js";
+import { audit } from "../utils/workflowEvents.js";
 import User from "../models/User.js";
 import Department from "../models/Department.js";
 
@@ -26,13 +28,13 @@ async function updateUserRole(request, response) {
       response.status(400).json({ message: "Assign another department manager first." });
       return;
     }
-    const user = await User.findByIdAndUpdate(request.params.id, { role }, {
-      new: true, runValidators: true,
-    }).select("name email role");
-    if (!user) {
-      response.status(404).json({ message: "User not found." });
-      return;
-    }
+    const user = await transaction(async (session) => {
+      const saved = await User.findById(request.params.id).select("name email role").session(session);
+      if (!saved) throw new Error("User not found.");
+      const before = saved.toObject(); saved.role = role; await saved.save({ session });
+      await audit(session, request.user.userId, "user.role.update", "User", saved._id, before, saved.toObject());
+      return saved;
+    });
     response.json(user);
   } catch (error) {
     response.status(400).json({ message: "Could not change the role." });

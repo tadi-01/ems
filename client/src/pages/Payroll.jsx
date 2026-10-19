@@ -1,3 +1,6 @@
+import PayrollSchedule from "../components/PayrollSchedule";
+import DecisionForm from "../components/DecisionForm";
+import api from "../services/api";
 import PayrollTable from "../components/PayrollTable";
 import MonthField from "../components/MonthField";
 import { getSavedUser } from "../services/session";
@@ -19,6 +22,7 @@ function Payroll() {
   const [payslips, setPayslips] = useState([]);
   const [monthFilter, setMonthFilter] = useState("");
   const [editing, setEditing] = useState(null);
+  const [review, setReview] = useState(null);
   const [viewing, setViewing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -46,7 +50,7 @@ function Payroll() {
 
   // Runs after the form saves: close edit mode and reload the list.
   function handleSaved() {
-    setNotice("Payslip saved.");
+    setNotice("Payroll saved as pending approval.");
     setEditing(null);
     loadPayslips(monthFilter);
   }
@@ -59,7 +63,7 @@ function Payroll() {
 
   // Deletes a payslip after a simple confirmation.
   async function removePayslip(id) {
-    if (!window.confirm("Delete this payslip?")) return;
+    if (!window.confirm("Void this pending payroll record? Its audit history will be retained.")) return;
     try {
       await deletePayslip(id);
       await loadPayslips(monthFilter);
@@ -75,7 +79,8 @@ function Payroll() {
   return (
     <main className="content-page">
       <h1>Payroll</h1>
-      <p className="page-description">Monthly pay records, clearly organised and ready to view or print.</p>
+      <p className="page-description">HR prepares monthly payroll; Admin reviews and approves it. Approval releases a payslip but does not record or execute payment.</p>
+      {canManage && <PayrollSchedule />}
       {error && <p className="error" role="alert">{error}</p>}
       {notice && <p className="notice" role="status">{notice}</p>}
       {canManage && <div className="view-switch" aria-label="Payslip view">
@@ -98,7 +103,9 @@ function Payroll() {
           </form>
         </>
       )}
-      <PayrollTable loading={loading} payslips={payslips} showEmployee={canManage} canEdit={canManage && !showMine}
+      {review && <DecisionForm key={review._id} title={`Review ${review.employee?.name}: ${review.month}, net ${review.netSalary}`} onClose={() => setReview(null)}
+        onDecision={async (decision) => { await api.put(`/payroll/${review._id}/decision`, { ...decision, revision: review.revision }); await loadPayslips(monthFilter); }} />}
+      <PayrollTable onReview={user?.role === "Admin" && !showMine ? setReview : null} loading={loading} payslips={payslips} showEmployee={canManage} canEdit={canManage && !showMine}
         onView={setViewing} onEdit={setEditing} onDelete={removePayslip} />
     </main>
   );

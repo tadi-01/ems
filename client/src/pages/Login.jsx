@@ -1,11 +1,12 @@
 import AuthLayout from "../components/AuthLayout";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/authService";
 
 // Shows the login form and sends valid details to the backend.
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -23,7 +24,8 @@ function Login() {
     setSubmitting(true);
     try {
       await loginUser(form);
-      navigate("/dashboard");
+      const from = location.state?.from;
+      navigate(typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : "/dashboard", { replace: true });
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Login failed.");
     } finally { setSubmitting(false); }
@@ -32,7 +34,7 @@ function Login() {
   return (
     <AuthLayout>
       <form className="auth-box" onSubmit={submitForm}>
-        <p className="eyebrow">Your workspace</p>
+        <p className="eyebrow">YOUR WORKDAY STARTS HERE</p>
         <h2>Welcome back</h2>
         <p className="auth-description">Log in to continue to your workspace.</p>
         {error && <p className="error" role="alert">{error}</p>}
@@ -52,6 +54,7 @@ function Login() {
           Password
           <input
             name="password"
+            placeholder="Enter your password"
             type="password"
             autoComplete="current-password"
             value={form.password}
@@ -60,11 +63,9 @@ function Login() {
           />
         </label>
         <button className="button" type="submit" disabled={submitting}>
-          {submitting ? "Logging in..." : "Log in"}
+          {submitting ? "Logging in..." : "Log in"}<span aria-hidden="true">→</span>
         </button>
-        <p>
-          Need an account? <Link to="/register">Register</Link>
-        </p>
+        <p className="auth-account-note">Use the email address registered with your team.</p>
       </form>
     </AuthLayout>
   );

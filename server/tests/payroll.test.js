@@ -1,3 +1,5 @@
+import { readPayslipAmounts } from "../utils/payrollHelpers.js";
+import { plannedDates } from "../utils/payrollSchedule.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import Payroll from "../models/Payroll.js";
@@ -6,34 +8,26 @@ import User from "../models/User.js";
 import { createPayslip, updatePayslip, getMyPayslips } from "../controllers/payrollController.js";
 import { createResponse } from "./helpers.js";
 
-test("payslip edits record the editor and preserve the original creator", async (context) => {
-  const payslip = { basicSalary: 1000, createdBy: "creator",
-    async save() {}, async populate() { return this; } };
-  context.mock.method(Payroll, "findById", async () => payslip);
-  const response = createResponse();
-  await updatePayslip({ params: { id: "p" }, body: { tax: 100 }, user: { userId: "editor" } }, response);
-  assert.equal(response.body.createdBy, "creator");
-  assert.equal(response.body.updatedBy, "editor");
-  assert.equal(response.body.netSalary, 900);
+test("payroll itemises overtime, pension and loans without trusting net salary", () => {
+  const { amounts } = readPayslipAmounts({ basicSalary: 1000, allowances: 50, bonuses: 20, overtime: 100, tax: 100, pension: 30, loanDeductions: 40, deductions: 10, netSalary: 99999 }, 0);
+  assert.equal(amounts.netSalary, 990);
+  assert.ok(readPayslipAmounts({ basicSalary: 100, pension: 101 }, 0).error);
 });
 
-test("creation ignores supplied net salary and copies company metadata", async (context) => {
-  context.mock.method(Employee, "findById", async () => ({ _id: "employee", salary: 1000 }));
-  context.mock.method(Payroll, "create", async (data) => ({ async populate() { return data; } }));
-  const response = createResponse();
-  await createPayslip({ body: { employee: "employee", month: "2026-10", netSalary: 1 }, user: { userId: "creator" } }, response);
-  assert.equal(response.statusCode, 201);
-  assert.equal(response.body.netSalary, 1000);
-  assert.equal(response.body.companyName, process.env.COMPANY_NAME || "");
-  assert.equal(response.body.currency, process.env.PAYROLL_CURRENCY || "");
+test("schedule uses the last working day including explicit public holidays", () => {
+  const dates = plannedDates({ preparationDay: 25, approvalDay: 28, paymentRule: "last-working-day", holidays: ["2026-10-30"] }, "2026-10");
+  assert.equal(dates.preparation, "2026-10-25");
+  assert.equal(dates.approvalDue, "2026-10-28");
+  assert.equal(dates.plannedPayment, "2026-10-29");
 });
 
 test("personal payslips use the linked employee for every account role", async (context) => {
   context.mock.method(User, "findById", async () => ({ _id: "user" }));
   context.mock.method(Employee, "findOne", async () => ({ _id: "employee" }));
   context.mock.method(Payroll, "find", (query) => {
-    assert.deepEqual(query, { employee: "employee" });
-    return { populate: () => ({ sort: async () => [{ month: "2026-10" }] }) };
+    assert.equal(query.employee, "employee");
+    assert.deepEqual(query.$or, [{ status: "Approved" }, { status: { $exists: false } }]);
+    return { populate: () => ({ sort: () => ({ lean: async () => [{ month: "2026-10" }] }) }) };
   });
   for (const role of ["Admin", "HR", "Employee"]) {
     const response = createResponse();
