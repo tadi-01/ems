@@ -1,5 +1,15 @@
 # Change log
 
+## 2026-10-19 — Remove external payment recording section
+
+- Removed the “Record completed external payment” form from department payroll.
+- Removed its unused payment handler and local reference/confirmation state.
+- Preserved payroll preparation, approval, viewing, and editing behavior.
+
+### Reversibility
+
+Revert the commit containing this entry to restore the section; no backend or data changes were made.
+
 ## 2026-10-19 — Carbon icon refresh
 
 - Added `@carbon/icons-react` and `@carbon/styles` to the client dependencies.
