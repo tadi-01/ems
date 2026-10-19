@@ -14,7 +14,7 @@ replica set.
 | Layer | Technology | Why |
 | --- | --- | --- |
 | Frontend | React 18 + Vite, plain CSS | Fast HMR, no heavy CSS framework overhead |
-| Backend | Express 5, Node 20 | Lightweight, async-native, familiar to the team |
+| Backend | Express 4, Node 20 | Lightweight, async-native, familiar to the team |
 | Database | MongoDB + Mongoose | Flexible schema for evolving HR data; Atlas replica set enables multi-document transactions |
 | Auth | JWT (jsonwebtoken) + bcrypt | Stateless tokens scale horizontally; bcrypt slows offline brute-force |
 | Rate limiting | express-rate-limit | Caps login attempts at 10 / 15 min per IP |

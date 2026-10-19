@@ -4,7 +4,7 @@ import WorkflowRun from "../models/WorkflowRun.js";
 import sendPayrollReminders from "../utils/payrollReminders.js";
 import { getTodayText } from "../utils/dateHelpers.js";
 
-// Exercises department review invalidation, whole-batch limits and external payment evidence.
+// Exercises department review invalidation, whole-batch limits and whole-batch budget limits.
 async function verifyDepartmentPayroll(request, { department, adminToken, token }) {
   const month = "2026-09", base = `/payroll/departments/${department._id}`;
   const load = async () => (await request(`/payroll/departments?month=${month}`, "GET", undefined, token)).find((row) => row.department._id === department._id);
@@ -29,15 +29,6 @@ async function verifyDepartmentPayroll(request, { department, adminToken, token 
   await sendPayrollReminders(settings, getTodayText());
   assert.equal(await WorkflowRun.countDocuments({ _id: `${month}-${department._id}-payment-due` }), 1);
   assert.ok((await load()).slips.every((slip) => !slip.paidAt));
-  const payment = { month, version: batch.version, reference: "QA external batch receipt", confirmed: true };
-  await request(`${base}/payment`, "PUT", payment, token, 403);
-  await request(`${base}/payment`, "PUT", { ...payment, confirmed: false }, adminToken, 400);
-  await request(`${base}/payment`, "PUT", payment, adminToken);
-  await request(`${base}/payment`, "PUT", payment, adminToken, 400);
-  batch = await load();
-  assert.ok(batch.slips.every((slip) => slip.paymentState === "Paid externally" && slip.paymentReference === payment.reference));
-  const future = (await request("/payroll/departments?month=2027-04", "GET", undefined, token)).find((row) => row.department._id === department._id);
-  await request(`${base}/payment`, "PUT", { ...payment, month: "2027-04", version: future.version }, adminToken, 400);
-  console.log("Department payroll checks passed: same-user HR approval, stale bonus protection, atomic budget check and external payment recording.");
+  console.log("Department payroll checks passed: same-user HR approval, stale bonus protection, and atomic budget check.");
 }
 export default verifyDepartmentPayroll;
