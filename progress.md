@@ -244,3 +244,9 @@ Validation for this pass: backend unit tests, frontend unit tests, production bu
 - Selecting a linked account in Employees now autofills the employee name, email, and phone from the account; the fields remain editable.
 - Removed designation from employee creation/editing, employee listings, payroll snapshots, payslips, and payslip downloads. Existing historical MongoDB documents may retain the old field, but new records no longer create or display it.
 - Kept the existing React/Vite + Express/Mongoose structure and did not add dependencies.
+
+## Role-specific leave and payroll visibility — 19 October 2026
+
+- Admin and HR users no longer see the employee-only account-link reminder on the Leave page.
+- Admin and HR users no longer see the My payslips switch or heading; their Payroll page opens directly on All payslips.
+- Employee leave and personal payslip behavior remains unchanged.

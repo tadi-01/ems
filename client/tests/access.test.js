@@ -41,8 +41,8 @@ test("payroll management and personal view choices follow the role", async () =>
   assert.match(employee, /My payslips/);
   assert.doesNotMatch(employee, /Prepare payroll|All payslips/);
   const admin = await renderPage("/src/pages/Payroll.jsx", "Admin");
-  assert.match(admin, /My payslips/);
-  assert.match(admin, /Prepare payroll/);
+  assert.doesNotMatch(admin, /My payslips/);
+  assert.match(admin, /All payslips|Prepare payroll/);
 });
 
 test("expired and damaged sessions cannot pass the route guard", () => {
