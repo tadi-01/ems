@@ -1,6 +1,6 @@
 const fields = [
   ["employeeId", "Employee ID", "text"], ["name", "Name", "text"],
-  ["designation", "Designation", "text"], ["email", "Email", "email"],
+  ["email", "Email", "email"],
   ["phone", "Phone", "tel"], ["joiningDate", "Joining date", "date"],
   ["salary", "Salary", "number"],
 ];

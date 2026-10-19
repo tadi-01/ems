@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    phone: { type: String, default: "", trim: true },
     password: { type: String, required: true, minlength: 6 },
     role: {
       type: String,

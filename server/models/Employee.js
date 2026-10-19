@@ -10,7 +10,6 @@ const employeeSchema = new mongoose.Schema(
       ref: "Department",
       required: true,
     },
-    designation: { type: String, required: true, trim: true },
     email: {
       type: String,
       required: true,

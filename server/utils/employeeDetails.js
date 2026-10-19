@@ -4,7 +4,7 @@ import User from "../models/User.js";
 // Copies editable fields and checks references instead of accepting arbitrary updates.
 async function readEmployeeDetails(body) {
   const details = {};
-  for (const key of ["employeeId", "name", "department", "designation", "email",
+  for (const key of ["employeeId", "name", "department", "email",
     "phone", "joiningDate", "salary"]) {
     if (body[key] !== undefined) details[key] = body[key];
   }

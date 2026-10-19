@@ -15,7 +15,6 @@ const emptyForm = {
   employeeId: "",
   name: "",
   department: "",
-  designation: "",
   email: "",
   phone: "",
   joiningDate: "",
@@ -51,7 +50,21 @@ function Employees() {
   }
 
   function updateField(event) {
-    setForm({ ...form, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    if (name === "user") {
+      const linkedUser = users.find((user) => user._id === value);
+      setForm((current) => ({
+        ...current,
+        user: value,
+        ...(linkedUser ? {
+          name: linkedUser.name,
+          email: linkedUser.email,
+          phone: linkedUser.phone || current.phone,
+        } : {}),
+      }));
+      return;
+    }
+    setForm((current) => ({ ...current, [name]: value }));
   }
 
   async function searchEmployees(event) {
