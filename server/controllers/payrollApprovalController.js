@@ -11,7 +11,7 @@ import { audit, notifyManagers } from "../utils/workflowEvents.js";
 async function decidePayroll(request, response) {
   try {
     const { decision, reason, confirmed, revision } = request.body;
-    if (!["Approved", "Rejected"].includes(decision) || confirmed !== true || !reason?.trim()) throw new Error("Confirm the decision and enter a justification.");
+    if (!["Approved", "Rejected"].includes(decision) || confirmed !== true) throw new Error("Confirm the decision before submitting.");
     const saved = await transaction(async (session) => {
       const slip = await Payroll.findById(request.params.id).session(session);
       if (!slip || slip.$isDefault("status") || slip.status !== "Pending approval") throw new Error("This payroll is no longer pending.");
@@ -22,9 +22,9 @@ async function decidePayroll(request, response) {
       const before = slip.toObject();
       const settings = await Settings.findById("company").session(session) || new Settings();
       if (decision === "Approved") slip.paymentDate = plannedDates(settings, slip.month).plannedPayment;
-      Object.assign(slip, { status: decision, requiresReview: false, approvedBy: request.user.userId, approvedAt: new Date(), decisionReason: reason.trim(), budgetExceeded: usage.exceeded });
+      Object.assign(slip, { status: decision, requiresReview: false, approvedBy: request.user.userId, approvedAt: new Date(), decisionReason: reason?.trim() || "", budgetExceeded: usage.exceeded });
       await slip.save({ session });
-      await audit(session, request.user.userId, `payroll.${decision.toLowerCase()}`, "Payroll", slip._id, before, slip.toObject(), reason.trim());
+      await audit(session, request.user.userId, `payroll.${decision.toLowerCase()}`, "Payroll", slip._id, before, slip.toObject(), reason?.trim() || "");
       await notifyManagers(session, department, `Payroll for ${slip.month}: ${decision}.`, "/payroll");
       const employee = await Employee.findById(slip.employee).session(session);
       if (decision === "Approved" && employee?.user) await Notification.create([{ recipient: employee.user, message: `Your ${slip.month} payslip is available. Approval does not record payment.`, path: "/payroll" }], { session });
