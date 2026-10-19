@@ -56,7 +56,10 @@ function Layout() {
           {menuOpen ? "Close menu" : "Menu"}
         </button>
         <button type="button" className="desktop-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>☰</button>
-        <NavLink to="/dashboard" className="shell-brand" onClick={followLink}>EMS <span>Employee Management</span></NavLink>
+        <NavLink to="/dashboard" className="shell-brand" onClick={followLink} aria-label="EMS Employee Management">
+          <span className="shell-brand-mark" aria-hidden="true">E</span>
+          <span className="shell-brand-name">EMS</span><span>Employee Management</span>
+        </NavLink>
       </div>
       <p className="shell-location">{title}</p>
       <AccountMenu user={user} onLogout={logOut} />
