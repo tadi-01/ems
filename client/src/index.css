@@ -305,7 +305,8 @@ form.data-form > .button { justify-self: start; }
 .drawer-backdrop { display: none; }
 @media (max-width: 1100px) { .masthead-name, .shell-brand span { display: none; } }
 @media (max-width: 768px) {
-  .desktop-toggle { display: none; }
+  .desktop-toggle { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; padding: 0 8px; color: #FFFFFF; background: transparent; border: 1px solid #525252; cursor: pointer; }
+.desktop-toggle:hover { background: #393939; }
   .drawer-backdrop { display: block; position: fixed; inset: 48px 0 0; z-index: 29; background: #0006; border: 0; }
   .sidebar, .sidebar-collapsed .sidebar { display: none; position: fixed; inset: 48px auto 0 0; margin: 0; width: min(280px, 85vw); z-index: 30; }
   .sidebar.is-open, .sidebar-collapsed .sidebar.is-open { display: flex; }

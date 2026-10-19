@@ -51,11 +51,11 @@ function Layout() {
     <a className="skip-link" href="#workspace-content">Skip to content</a>
     <header className="topbar no-print">
       <div className="shell-identity">
-        <button ref={menuButton} className="menu-toggle" aria-expanded={menuOpen}
+        <button type="button" ref={menuButton} className="menu-toggle" aria-expanded={menuOpen}
           aria-controls="main-navigation" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? "Close menu" : "Menu"}
         </button>
-        <button className="desktop-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>☰</button>
+        <button type="button" className="desktop-toggle" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>☰</button>
         <NavLink to="/dashboard" className="shell-brand" onClick={followLink}>EMS <span>Employee Management</span></NavLink>
       </div>
       <p className="shell-location">{title}</p>

@@ -225,3 +225,14 @@ This entry supersedes earlier descriptions of mandatory HR review, separate Admi
 The live run removed its disposable QA database successfully. Browser checks used deterministic API fixtures; representative mobile notifications were visually inspected. The earlier 156-screen matrix remains historical evidence from the preceding workflow pass and was not repeated for this final cleanup.
 
 No payment-provider integration was added. Admin still confirms completed external payments manually; payroll approval does not transfer money. The Word document remains an earlier architecture snapshot. README.md describes the current behavior. Changes were local and uncommitted at the end of this pass; no production deployment was performed.
+
+## Security and UX maintenance pass — 19 October 2026
+
+- Restricted Express CORS through an origin callback while preserving configured local/deployed origins and non-browser health checks.
+- Disabled the Express `X-Powered-By` fingerprint and added `X-Content-Type-Options`, `Referrer-Policy`, and `X-Frame-Options` response headers.
+- Added a 100 KB JSON body limit to reduce accidental or abusive oversized payloads.
+- Tightened bearer-token parsing so malformed authorization headers are rejected before JWT verification.
+- Added explicit button types to shell controls and made the desktop sidebar toggle visible, keyboard-focusable, and hoverable.
+- Kept the README conventions: React/Vite with plain CSS, Express/Mongoose, small components, existing routes/services, and no dependency or framework migration.
+
+Validation for this pass: backend unit tests, frontend unit tests, production build, and review of the final working tree are required before commit. The change will be committed without rewriting history so it can be safely reverted with `git revert <commit>`.
