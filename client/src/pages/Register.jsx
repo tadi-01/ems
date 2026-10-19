@@ -5,7 +5,7 @@ import { registerUser } from "../services/authService";
 
 function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -52,6 +52,18 @@ function Register() {
             autoComplete="email"
             placeholder="you@company.com"
             value={form.email}
+            onChange={updateField}
+            required
+          />
+        </label>
+        <label>
+          Phone number
+          <input
+            name="phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="Enter your phone number"
+            value={form.phone}
             onChange={updateField}
             required
           />

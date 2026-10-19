@@ -10,8 +10,7 @@ function EmployeeTable({ employees, canManage, loading, onEdit, onDelete }) {
               <th>ID</th>
               <th>Name</th>
               <th>Department</th>
-              <th>Designation</th>
-              <th>Email</th>
+                            <th>Email</th>
               {canManage && <th>Actions</th>}
             </tr>
           </thead>
@@ -21,8 +20,7 @@ function EmployeeTable({ employees, canManage, loading, onEdit, onDelete }) {
                 <td>{employee.employeeId}</td>
                 <td>{employee.name}</td>
                 <td>{employee.department?.name}</td>
-                <td>{employee.designation}</td>
-                <td>{employee.email}</td>
+                                <td>{employee.email}</td>
                 {canManage && <td>
                   <button onClick={() => onEdit(employee)}>Edit</button>{" "}
                   <button onClick={() => onDelete(employee._id)}>

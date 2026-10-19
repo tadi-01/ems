@@ -44,7 +44,7 @@ async function prepareDepartmentPayroll(request, response) {
         if (await Payroll.exists({ employee: employee._id, month }).session(session)) continue;
         const [slip] = await Payroll.create([{ employee: employee._id, department: department._id, month,
           basicSalary: employee.salary, netSalary: employee.salary, requiresReview: true, budgetExceeded: usage.exceeded, createdBy: request.user.userId,
-          employeeSnapshot: { name: employee.name, employeeId: employee.employeeId, designation: employee.designation },
+          employeeSnapshot: { name: employee.name, employeeId: employee.employeeId },
           companyName: process.env.COMPANY_NAME || "", currency: process.env.PAYROLL_CURRENCY || "" }], { session });
         await audit(session, request.user.userId, "payroll.department.prepare", "Payroll", slip._id, null, slip.toObject());
       }
