@@ -7,6 +7,7 @@ function createUserResponse(user) {
     id: user._id,
     name: user.name,
     email: user.email,
+    phone: user.phone,
     role: user.role,
   };
 }
@@ -19,8 +20,9 @@ async function registerUser(request, response) {
   try {
     const { name, password } = request.body;
     const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
+    const phone = typeof request.body.phone === "string" ? request.body.phone.trim() : "";
 
-    if (typeof name !== "string" || !name.trim() || !email || typeof password !== "string" || password.length < 6 || Buffer.byteLength(password) > 72) {
+    if (typeof name !== "string" || !name.trim() || !email || !phone || typeof password !== "string" || password.length < 6 || Buffer.byteLength(password) > 72) {
       response
         .status(400)
         .json({ message: "Enter a name, email and password of 6 to 72 bytes." });
@@ -39,6 +41,7 @@ async function registerUser(request, response) {
     const user = await User.create({
       name,
       email,
+      phone,
       password,
       role: "Employee",
     });

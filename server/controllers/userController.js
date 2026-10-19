@@ -6,7 +6,7 @@ import Department from "../models/Department.js";
 // Lists safe account details for role management and account dropdowns.
 async function getAllUsers(request, response) {
   try {
-    response.json(await User.find().select("name email role").sort({ name: 1 }));
+    response.json(await User.find().select("name email phone role").sort({ name: 1 }));
   } catch (error) {
     response.status(500).json({ message: "Could not load users." });
   }

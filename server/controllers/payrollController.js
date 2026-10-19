@@ -5,7 +5,7 @@ import { isValidMonth, readPayslipAmounts } from "../utils/payrollHelpers.js";
 import transaction from "../utils/transaction.js";
 import { audit, notifyManagers } from "../utils/workflowEvents.js";
 import { lockBudget, budgetUsage } from "../utils/budgetHelpers.js";
-const employeeFields = "name employeeId designation";
+const employeeFields = "name employeeId";
 
 // Prepares a monthly record for Admin approval; excess costs remain visible and pending.
 async function createPayslip(request, response) {
@@ -20,7 +20,7 @@ async function createPayslip(request, response) {
       const department = await lockBudget(employee.department, session);
       const usage = await budgetUsage(department, month, session, { employeeId: String(id), month, amounts });
       const [slip] = await Payroll.create([{ employee: id, department: department._id, month, ...amounts,
-        employeeSnapshot: { name: employee.name, employeeId: employee.employeeId, designation: employee.designation },
+        employeeSnapshot: { name: employee.name, employeeId: employee.employeeId },
         budgetExceeded: usage.exceeded, createdBy: request.user.userId,
         companyName: process.env.COMPANY_NAME || "", currency: process.env.PAYROLL_CURRENCY || "" }], { session });
       await audit(session, request.user.userId, "payroll.prepare", "Payroll", slip._id, null, slip.toObject());

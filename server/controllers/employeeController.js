@@ -23,7 +23,7 @@ async function getAllEmployees(request, response) {
         }
       : {};
     const employees = await Employee.find(searchFilter)
-      .select(request.user?.role === "Employee" ? "employeeId name department designation email" : "")
+      .select(request.user?.role === "Employee" ? "employeeId name department email" : "")
       .populate("department", "name")
       .sort({ name: 1 });
     response.json(employees);

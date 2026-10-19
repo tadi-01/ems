@@ -25,8 +25,6 @@ function Payslip({ payslip, onClose }) {
         <p>
           Employee: {person?.name} ({person?.employeeId})
           <br />
-          Designation: {person?.designation}
-          <br />
           Pay month: {payslip.month}
         </p>
         <table>

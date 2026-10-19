@@ -60,7 +60,7 @@ async function verify() {
   await request("/users", "GET", undefined, token, 403);
   const department = await request("/departments", "POST", { name: "QA Operations", manager: admin._id, budget: 10000, reason: "Initial QA budget" }, adminToken, 201);
   const details = { employeeId: "QA001", name: "QA Employee", email: "person@example.test",
-    user: employeeLogin.user.id, department: department._id, designation: "Tester", phone: "000000",
+    user: employeeLogin.user.id, department: department._id, phone: employeeLogin.user.phone || "000000",
     joiningDate: "2026-01-01", salary: 1000 };
   const employee = await request("/employees", "POST", details, adminToken, 201);
   await request("/employees", "POST", details, token, 403);
