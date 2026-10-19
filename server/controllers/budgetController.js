@@ -72,7 +72,7 @@ async function adjustBudget(request, response) {
 async function decideRequest(request, response) {
   try {
     const { decision, reason, confirmed } = request.body;
-    if (!["Approved", "Rejected"].includes(decision) || !reason?.trim() || confirmed !== true) throw new Error("Confirm a decision and justification.");
+    if (!["Approved", "Rejected"].includes(decision) || confirmed !== true) throw new Error("Confirm the decision before submitting.");
     await transaction(async (session) => {
       const item = await BudgetRequest.findById(request.params.id).session(session);
       if (!item || item.status !== "Pending approval") throw new Error("Request is no longer pending.");
@@ -94,9 +94,9 @@ async function decideRequest(request, response) {
         }
       }
       const before = item.toObject();
-      Object.assign(item, { status: decision, decidedBy: request.user.userId, decidedAt: new Date(), decisionReason: reason.trim() });
+      Object.assign(item, { status: decision, decidedBy: request.user.userId, decidedAt: new Date(), decisionReason: reason?.trim() || "" });
       await item.save({ session });
-      await audit(session, request.user.userId, `budget.request.${decision.toLowerCase()}`, "BudgetRequest", item._id, before, item.toObject(), reason);
+      await audit(session, request.user.userId, `budget.request.${decision.toLowerCase()}`, "BudgetRequest", item._id, before, item.toObject(), reason?.trim() || "");
       await notifyManagers(session, department, `${item.kind}: ${decision}.`, "/departments");
     });
     response.json({ message: "Decision recorded." });
