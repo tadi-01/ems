@@ -30,6 +30,11 @@ function AccountMenu({ user, onLogout }) {
     try { await api.put("/workflow/notifications/read-all"); await load(); }
     catch { setError("Could not mark notifications read."); }
   }
+  // Permanently removes all of this account's notifications.
+  async function clearAll() {
+    try { await api.delete("/workflow/notifications"); await load(); }
+    catch { setError("Could not clear notifications."); }
+  }
   return <div className="account-menu" ref={container} onKeyDown={(event) => {
     if (event.key === "Escape") { setPanel(""); container.current?.querySelector("button")?.focus(); }
   }}>
@@ -45,7 +50,7 @@ function AccountMenu({ user, onLogout }) {
     </button>
     {panel && <section className="masthead-panel" aria-label={panel === "profile" ? "Account" : "Notifications"}>
       {panel === "profile" ? <><strong>{user?.name}</strong><p>{user?.email}</p><button className="button" onClick={onLogout}>Log out <Logout size={16} aria-hidden="true" /></button></> : <>
-        <div className="notification-heading"><h2>Notifications</h2>{data.unread > 0 && <button onClick={markAllRead}>Mark all read</button>}</div>{error && <p role="alert">{error} <button onClick={load}>Retry</button></p>}
+        <div className="notification-heading"><h2>Notifications</h2><div className="notification-heading-actions">{data.unread > 0 && <button onClick={markAllRead}>Mark all read</button>}{data.items.length > 0 && <button onClick={clearAll}>Clear all</button>}</div></div>{error && <p role="alert">{error} <button onClick={load}>Retry</button></p>}
         {!error && !data.items.length && <p>No notifications yet.</p>}
         <div className="notification-list">{data.items.map((item) => <div className="notification-row" key={item._id}>
           <Link to={item.path} onClick={() => setPanel("")}>{item.message}</Link>

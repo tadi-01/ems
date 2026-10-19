@@ -62,7 +62,7 @@ function Departments() {
       <label className="field">Manager
         <select name="manager" value={form.manager} onChange={updateField} required>
           <option value="">Choose an Admin or HR manager</option>
-          {managers.map((user) => <option key={user._id} value={user._id}>{user.name} ({user.email})</option>)}
+          {managers.map((user) => <option key={user._id} value={user._id}>{user.name}</option>)}
         </select>
       </label>
       <label className="field">Budget

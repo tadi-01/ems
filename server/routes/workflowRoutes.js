@@ -25,4 +25,9 @@ router.put("/notifications/:id/read", async (request, response) => {
     response.json(item);
   } catch { response.status(400).json({ message: "Could not update notification." }); }
 });
+// Permanently removes all notifications for the signed-in account.
+router.delete("/notifications", async (request, response) => {
+  try { await Notification.deleteMany({ recipient: request.user.userId }); response.json({ message: "Notifications cleared." }); }
+  catch { response.status(400).json({ message: "Could not clear notifications." }); }
+});
 export default router;

@@ -21,7 +21,7 @@ function EmployeeForm({ saving = false, form, departments, users, editingId, onC
     <label className="field">Linked account
       <select name="user" value={form.user || ""} onChange={onChange} disabled={saving}>
         <option value="">Match by email on first use</option>
-        {users.map((user) => <option key={user._id} value={user._id}>{user.name} ({user.email})</option>)}
+        {users.map((user) => <option key={user._id} value={user._id}>{user.name}</option>)}
       </select>
     </label>
     <button className="button" type="submit" disabled={saving}>{saving ? "Saving..." : editingId ? "Update employee" : "Add employee"}</button>
