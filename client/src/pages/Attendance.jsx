@@ -20,8 +20,8 @@ function Attendance() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadMyRecords();
     if (canSeeAll) loadAllRecords("");
+    else loadMyRecords();
   }, []);
 
   async function loadMyRecords() {
@@ -65,10 +65,11 @@ function Attendance() {
   return (
     <main className="content-page">
       <h1>Attendance</h1>
-      <p className="page-description">Record your workday and review attendance history.</p>
+      <p className="page-description">{canSeeAll ? "Review employee attendance history." : "Record your workday and review attendance history."}</p>
       {error && <p className="error" role="alert">{error}</p>}
       {message && <p className="notice" role="status">{message}</p>}
       {saving && <p role="status">Saving attendance...</p>}
+      {!canSeeAll && <>
       {noEmployee && <p>Ask Admin or HR to link your account on the Employees page before recording attendance.</p>}
       <div className="data-form">
         <button
@@ -87,6 +88,7 @@ function Attendance() {
 
       <h2>My attendance</h2>
       <AttendanceTable records={myRecords} />
+      </>}
 
       {canSeeAll && (
         <>
