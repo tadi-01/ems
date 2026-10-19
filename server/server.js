@@ -22,6 +22,9 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Render sits behind a proxy; trust it so rate limits use the visitor's real address.
+app.set("trust proxy", 1);
+
 // Only the deployed React app (and the local Vite server) may call this API
 // from a browser. A slash at the end of CLIENT_URL is removed so it matches.
 const allowedOrigins = new Set([

@@ -11,7 +11,7 @@ only their own records.
 | React 18 + Vite    | Draws the pages the user sees                            |
 | React Router       | Decides which page appears for which address             |
 | Plain CSS          | Shared styles with no framework dependency               |
-| Express 5          | REST API, role guards and business logic                 |
+| Express 4          | REST API, role guards and business logic                 |
 | Mongoose + MongoDB | Data persistence; Atlas replica set enables transactions |
 | JWT + bcrypt       | Stateless auth; password hashing                         |
 | express-rate-limit | Brute-force protection on the login endpoint             |
