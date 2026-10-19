@@ -297,17 +297,16 @@ form.data-form > .button { justify-self: start; }
 .sidebar-collapsed .sidebar { display: none; }
 .sidebar-collapsed .layout-main { margin-left: 0; }
 .masthead-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.account-menu { position: relative; display: flex; align-items: center; gap: 12px; }
-.account-icon-button, .profile-button { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; color: #F4F4F4; background: transparent; border: 1px solid #394554; cursor: pointer; }
-.account-icon-button { width: 44px; border-radius: 10px; }
-.account-icon-button:hover, .account-icon-button:focus-visible, .profile-button:hover, .profile-button:focus-visible { background: #111923; border-color: #78A9FF; outline: 2px solid #78A9FF; outline-offset: 2px; }
-.notification-icon { position: relative; width: 17px; height: 14px; border: 2px solid #A6B3C3; border-top: 0; border-radius: 2px 2px 4px 4px; }
-.notification-icon::before, .notification-icon::after { content: ""; position: absolute; top: -5px; width: 8px; height: 5px; border-top: 2px solid #A6B3C3; }
-.notification-icon::before { left: -2px; transform: rotate(25deg); }
-.notification-icon::after { right: -2px; transform: rotate(-25deg); }
-.notification-count { position: absolute; top: 4px; right: 3px; display: grid; place-items: center; min-width: 15px; height: 15px; padding: 0 3px; color: #161616; background: #78A9FF; border-radius: 999px; font-size: 9px; font-weight: 700; }
-.profile-button { gap: 8px; padding: 3px 9px 3px 4px; border-radius: 24px; text-align: left; }
-.profile-avatar { display: grid; place-items: center; width: 34px; height: 34px; color: #161616; background: linear-gradient(145deg, #A6B3C3, #78A9FF); border: 2px solid #394554; border-radius: 50%; font-size: .78rem; font-weight: 700; }
+.account-menu { position: relative; display: flex; align-items: center; gap: 16px; }
+.account-icon-button, .profile-button { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0; color: #C6C6C6; background: transparent; border: 0; cursor: pointer; }
+.account-icon-button { width: 28px; }
+.account-icon-button:hover, .account-icon-button:focus-visible, .profile-button:hover, .profile-button:focus-visible { color: #FFFFFF; background: transparent; outline: 2px solid #78A9FF; outline-offset: 5px; }
+.notification-icon { position: relative; width: 15px; height: 14px; border: 1.5px solid currentColor; border-radius: 8px 8px 4px 4px; }
+.notification-icon::before { content: ""; position: absolute; left: -3px; right: -3px; bottom: -3px; border-bottom: 1.5px solid currentColor; border-radius: 50%; }
+.notification-icon::after { content: ""; position: absolute; left: 5px; bottom: -6px; width: 4px; height: 3px; border: 1.5px solid currentColor; border-top: 0; border-radius: 0 0 4px 4px; }
+.notification-count { position: absolute; top: 1px; right: -5px; display: grid; place-items: center; min-width: 14px; height: 14px; padding: 0 3px; color: #161616; background: #78A9FF; border-radius: 999px; font-size: 8px; font-weight: 700; }
+.profile-button { gap: 8px; text-align: left; }
+.profile-avatar { display: grid; place-items: center; width: 36px; height: 36px; color: #161616; background: linear-gradient(145deg, #A6B3C3, #78A9FF); border: 2px solid #394554; border-radius: 50%; font-size: .78rem; font-weight: 700; }
 .profile-summary { display: grid; gap: 2px; padding-right: 4px; }
 .profile-summary .masthead-name { font-weight: 600; }
 .profile-summary .role-label { color: #A6B3C3; font-size: .72rem; text-transform: capitalize; }
@@ -328,9 +327,9 @@ form.data-form > .button { justify-self: start; }
   .sidebar.is-open + .layout-main { padding-top: 64px; }
   .sidebar-footer { display: flex; }
   .topbar { gap: 8px; padding-inline: 8px; }
-  .account-menu { gap: 8px; }
+  .account-menu { gap: 14px; }
   .profile-summary { display: none; }
-  .profile-button { padding: 3px; }
+  .profile-button { width: 36px; }
   .account-menu .role-label { display: none; }
 }
 
