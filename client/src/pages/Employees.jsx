@@ -22,7 +22,6 @@ const emptyForm = {
   salary: "", user: "",
 };
 
-// Displays employee records and provides simple CRUD controls.
 function Employees() {
   const canManage = ["Admin", "HR"].includes(getSavedUser()?.role);
   const [users, setUsers] = useState([]);
@@ -36,12 +35,10 @@ function Employees() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Loads employees and departments when the page opens.
   useEffect(() => {
     loadData();
   }, []);
 
-  // Requests the current data from the backend.
   async function loadData() {
     setLoading(true);
     try {
@@ -53,12 +50,10 @@ function Employees() {
     } finally { setLoading(false); }
   }
 
-  // Updates one employee form field.
   function updateField(event) {
     setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  // Searches employees by their name, ID, or email.
   async function searchEmployees(event) {
     event.preventDefault();
     setError("");
@@ -67,7 +62,6 @@ function Employees() {
     catch (requestError) { setError(requestError.response?.data?.message || "Search failed."); } finally { setLoading(false); }
   }
 
-  // Saves a new employee or updates the employee being edited.
   async function submitForm(event) {
     event.preventDefault();
     if (saving) return;
@@ -87,7 +81,6 @@ function Employees() {
     } finally { setSaving(false); }
   }
 
-  // Places an employee in the form so it can be edited.
   function startEditing(employee) {
     setEditingId(employee._id);
     setForm({
@@ -97,7 +90,6 @@ function Employees() {
     });
   }
 
-  // Deletes an employee after a simple confirmation.
   async function removeEmployee(id) {
     if (!window.confirm("Delete this employee?")) return;
     setError("");

@@ -21,6 +21,13 @@ const payrollSchema = new mongoose.Schema(
     pension: { type: Number, default: 0, min: 0 },
     loanDeductions: { type: Number, default: 0, min: 0 },
     revision: { type: Number, default: 0 },
+    hrReviewedRevision: Number,
+    hrReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    hrReviewedAt: Date,
+    paymentDate: String,
+    paidAt: Date,
+    paymentReference: String,
+    paymentRecordedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     month: { type: String, required: true },
     // The basic salary is copied onto the payslip so that a later change to
     // Employee.salary does not rewrite old payslips.
@@ -29,7 +36,7 @@ const payrollSchema = new mongoose.Schema(
     bonuses: { type: Number, default: 0, min: 0 },
     deductions: { type: Number, default: 0, min: 0 },
     tax: { type: Number, default: 0, min: 0 },
-    // basic + allowances + bonuses - deductions - tax. The server works this out.
+    // Server-calculated earnings less tax, pension, loans and other deductions.
     netSalary: { type: Number, required: true },
     companyName: { type: String, default: "" },
     currency: { type: String, default: "" },

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/authService";
 
-// Shows the login form and sends valid details to the backend.
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,12 +10,10 @@ function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Updates one form field when the user types.
   function updateField(event) {
     setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  // Submits login details and opens the protected dashboard.
   async function submitForm(event) {
     event.preventDefault();
     if (submitting) return;

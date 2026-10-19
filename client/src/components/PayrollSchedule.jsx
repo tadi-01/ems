@@ -11,6 +11,6 @@ function PayrollSchedule() {
     catch { setError("Could not load payroll dates."); }
   }
   if (error) return <p role="alert">{error} <button onClick={load}>Retry</button></p>;
-  return schedule && <p className="notice">Prepare {schedule.preparation} · Approval due {schedule.approvalDue} · Planned payment {schedule.plannedPayment}. Automatic preparation {schedule.automaticPreparation ? "enabled" : "disabled"}. Payment is handled outside EMS.</p>;
+  return schedule && <p className="notice">Prepare {schedule.preparation} · Approval due {schedule.approvalDue} · Planned payment {schedule.plannedPayment}. Automatic preparation {schedule.automaticPreparation ? "enabled" : "disabled"}.</p>;
 }
 export default PayrollSchedule;

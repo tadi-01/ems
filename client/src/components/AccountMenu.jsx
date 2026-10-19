@@ -38,13 +38,14 @@ function AccountMenu({ user, onLogout }) {
       onClick={() => setPanel(panel === "profile" ? "" : "profile")}><span className="masthead-name">{user?.name}</span><span className="role-label">{user?.role}</span></button>
     {panel && <section className="masthead-panel" aria-label={panel === "profile" ? "Account" : "Notifications"}>
       {panel === "profile" ? <><strong>{user?.name}</strong><p>{user?.email}</p><button className="button" onClick={onLogout}>Log out</button></> : <>
-        <h2>Notifications</h2>{data.unread > 0 && <button onClick={markAllRead}>Mark all read</button>}{error && <p role="alert">{error} <button onClick={load}>Retry</button></p>}
+        <div className="notification-heading"><h2>Notifications</h2>{data.unread > 0 && <button onClick={markAllRead}>Mark all read</button>}</div>{error && <p role="alert">{error} <button onClick={load}>Retry</button></p>}
         {!error && !data.items.length && <p>No notifications yet.</p>}
-        {data.items.map((item) => <div className="notification-row" key={item._id}>
+        <div className="notification-list">{data.items.map((item) => <div className="notification-row" key={item._id}>
           <Link to={item.path} onClick={() => setPanel("")}>{item.message}</Link>
-          <small>{new Date(item.createdAt).toLocaleString()}</small>
+          <div className="notification-meta"><small>{!item.readAt && "Unread · "}{new Date(item.createdAt).toLocaleString()}</small>
           {!item.readAt && <button onClick={() => markRead(item._id)}>Mark read</button>}
-        </div>)}
+          </div>
+        </div>)}</div>
       </>}
     </section>}
   </div>;

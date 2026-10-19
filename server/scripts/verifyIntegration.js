@@ -89,8 +89,7 @@ async function verify() {
   assert.equal((await request("/payroll/me", "GET", undefined, token)).length, 0);
   const reviewer = await User.create({ name: "QA Approver", email: "approver@example.test", password, role: "Admin" });
   const { token: reviewerToken } = await request("/auth/login", "POST", { email: reviewer.email, password });
-  await request(`/payroll/${payroll._id}/decision`, "PUT", { decision: "Approved", reason: "Checked", confirmed: true, revision: updated.revision }, adminToken, 400);
-  await request(`/payroll/${payroll._id}/decision`, "PUT", { decision: "Approved", reason: "Checked", confirmed: true, revision: updated.revision }, reviewerToken);
+  await request(`/payroll/${payroll._id}/decision`, "PUT", { decision: "Approved", reason: "Prepared and approved by Admin", confirmed: true, revision: updated.revision }, adminToken);
   assert.equal((await request("/payroll/me", "GET", undefined, token)).length, 1);
   assert.equal((await request("/dashboard", "GET", undefined, adminToken)).totalEmployees, 1);
   await request(`/departments/${department._id}`, "DELETE", undefined, adminToken, 400);

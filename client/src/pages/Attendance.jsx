@@ -8,7 +8,6 @@ import {
   getMyAttendance,
 } from "../services/attendanceService";
 
-// Lets an employee check in and out, and lets Admin or HR see everyone's records.
 function Attendance() {
   const user = getSavedUser();
   const canSeeAll = user?.role === "Admin" || user?.role === "HR";
@@ -20,13 +19,11 @@ function Attendance() {
   const [noEmployee, setNoEmployee] = useState(false);
   const [error, setError] = useState("");
 
-  // Loads the attendance tables when the page opens.
   useEffect(() => {
     loadMyRecords();
     if (canSeeAll) loadAllRecords("");
   }, []);
 
-  // Loads the logged-in employee's own records.
   async function loadMyRecords() {
     try {
       setMyRecords(await getMyAttendance());
@@ -37,7 +34,6 @@ function Attendance() {
     }
   }
 
-  // Loads everyone's records, optionally for one date.
   async function loadAllRecords(date) {
     try {
       setAllRecords(await getAllAttendance(date));
@@ -46,7 +42,6 @@ function Attendance() {
     }
   }
 
-  // Sends a check-in or check-out request and then refreshes the tables.
   async function recordTime(action, successText) {
     if (saving) return;
     setSaving(true);
@@ -62,7 +57,6 @@ function Attendance() {
     } finally { setSaving(false); }
   }
 
-  // Filters the all-employees table by the chosen date.
   function filterByDate(event) {
     event.preventDefault();
     loadAllRecords(dateFilter);

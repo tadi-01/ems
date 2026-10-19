@@ -27,10 +27,10 @@ async function prepareScheduledPayroll() {
           const [slip] = await Payroll.create([{ employee: employee._id, department: employee.department, month,
             basicSalary: employee.salary, netSalary: employee.salary, createdBy: settings.updatedBy,
             employeeSnapshot: { name: employee.name, employeeId: employee.employeeId, designation: employee.designation },
-            scheduled: true, requiresReview: true, budgetExceeded: usage.exceeded,
+            scheduled: true, requiresReview: false, budgetExceeded: usage.exceeded,
             companyName: process.env.COMPANY_NAME || "", currency: process.env.PAYROLL_CURRENCY || "" }], { session });
-          await audit(session, settings.updatedBy, "payroll.scheduled.prepare", "Payroll", slip._id, null, slip.toObject(), "Automatic preparation; deductions require HR review.");
-          await notifyManagers(session, department, `${employee.name}: ${month} payroll requires HR review before Admin approval.${usage.exceeded ? " Budget exceeded; existing salary flagged." : ""}`, "/payroll");
+          await audit(session, settings.updatedBy, "payroll.scheduled.prepare", "Payroll", slip._id, null, slip.toObject(), "Automatic preparation; deductions require review before approval.");
+          await notifyManagers(session, department, `${employee.name}: ${month} payroll awaits approval.${usage.exceeded ? " Budget exceeded; existing salary flagged." : ""}`, "/payroll");
         });
       } catch (error) { if (error.code !== 11000) throw error; }
     }

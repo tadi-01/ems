@@ -24,7 +24,7 @@ async function createPayslip(request, response) {
         budgetExceeded: usage.exceeded, createdBy: request.user.userId,
         companyName: process.env.COMPANY_NAME || "", currency: process.env.PAYROLL_CURRENCY || "" }], { session });
       await audit(session, request.user.userId, "payroll.prepare", "Payroll", slip._id, null, slip.toObject());
-      await notifyManagers(session, department, `Payroll for ${employee.name} (${month}) awaits Admin approval.${usage.exceeded ? " Budget exceeded: existing salary requires finance attention." : usage.percent >= 80 ? ` Budget usage ${usage.percent}%.` : ""}`, "/payroll");
+      await notifyManagers(session, department, `Payroll for ${employee.name} (${month}) awaits approval.${usage.exceeded ? " Budget exceeded: existing salary requires finance attention." : usage.percent >= 80 ? ` Budget usage ${usage.percent}%.` : ""}`, "/payroll");
       return slip;
     });
     response.status(201).json(await saved.populate("employee", employeeFields));
@@ -43,10 +43,10 @@ async function updatePayslip(request, response) {
       if (error) throw new Error(error);
       const department = await lockBudget(slip.department, session);
       const usage = await budgetUsage(department, slip.month, session, { employeeId: String(slip.employee), month: slip.month, amounts });
-      Object.assign(slip, amounts, { status: "Pending approval", requiresReview: false, budgetExceeded: usage.exceeded, updatedBy: request.user.userId });
+      Object.assign(slip, amounts, { status: "Pending approval", requiresReview: false, hrReviewedRevision: undefined, hrReviewedBy: undefined, hrReviewedAt: undefined, budgetExceeded: usage.exceeded, updatedBy: request.user.userId });
       slip.revision += 1; await slip.save({ session });
       await audit(session, request.user.userId, "payroll.revise", "Payroll", slip._id, before, slip.toObject());
-      await notifyManagers(session, department, `Revised payroll (${slip.month}) awaits approval.`, "/payroll");
+      await notifyManagers(session, department, `Revised payroll (${slip.month}) requires approval.`, "/payroll");
       return slip;
     });
     response.json(await saved.populate("employee", employeeFields));

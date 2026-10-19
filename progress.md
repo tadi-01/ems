@@ -144,3 +144,84 @@ Paths are relative to the repository root. No dependency manifests or lockfiles 
 Use an Atlas deployment or MongoDB replica set: financial writes use transactions. Admin must explicitly enable automatic preparation in Settings. Keep the backend running for scheduled work; missed earlier months need manual preparation. Configure holidays and company timezone. Deductions remain HR-entered amounts; no statutory rate tables, currency conversion or payment transfer is supplied. Department budgets are recurring monthly limits rather than immutable historical monthly allocations. Existing salaries are flagged for Admin attention when over budget.
 
 Changes remain local and uncommitted. README.md is the current operating guide; Project_Documentation.docx remains the earlier 18 October architecture snapshot and was not regenerated in this workflow pass.
+
+## Department payroll and external payment tracking — 19 October 2026
+
+The owner requested payroll by department, bonuses before payment, external payment tracking only, and HR review followed by Admin final approval. Existing roles, styles, employee payslips and Admin Settings are reused.
+
+Department/month preparation adds missing employee records without overwriting entered bonuses. HR reviews the complete pending set; changes invalidate the edited record's review. Admin confirms a freshly reviewed batch, with an atomic check of its combined budget commitments. Approved records retain the payment date from Settings at approval. On that date they become due, and the running scheduler sends a deduplicated department reminder. Admin can record a reference only after explicitly confirming that all approved unpaid records in the batch were paid externally. No transfer is executed, and elapsed time never marks payroll paid. Future-date and duplicate confirmations are rejected. Payslip viewing and downloads show recorded external-payment references.
+
+| File | Department-workflow change |
+| --- | --- |
+| `server/models/Payroll.js` | Add HR review revision/actor/time, approved payment date and external payment evidence. |
+| `server/utils/departmentPayroll.js` | Stable batch fingerprints, department record selection and derived payment state. |
+| `server/controllers/departmentPayrollController.js` | Department listing/preparation, HR review and atomic Admin batch decisions. |
+| `server/controllers/payrollPaymentController.js` | Admin-only external payment confirmation with reference, date and duplicate guards. |
+| `server/routes/payrollRoutes.js` | Expose authenticated department and payment endpoints. |
+| `server/controllers/payrollController.js` | Invalidate HR review on amount changes and clarify notifications. |
+| `server/controllers/payrollApprovalController.js` | Enforce HR review on the existing individual decision API and snapshot its payment date. |
+| `server/utils/payrollReminders.js` | Department due-payment reminders, including overdue previous months. |
+| `client/src/components/DepartmentPayroll.jsx` | Department/month selection, totals, batch actions and external receipt form. |
+| `client/src/pages/Payroll.jsx` | Embed department workflow, reuse individual editor and scroll to selected record. |
+| `client/src/components/PayrollTable.jsx` | Allow reuse without a void action in the department view. |
+| `client/src/components/Payslip.jsx` | Display recorded external payment reference. |
+| `client/src/services/downloadPayslip.js` | Include external-payment recording state in the escaped HTML download. |
+| `server/tests/departmentPayroll.test.js` | Batch invalidation and payment-state boundary checks. |
+| `server/scripts/verifyDepartmentPayroll.js` | Live HR/Admin, bonuses, whole-batch budget and external-payment checks. |
+| `server/scripts/verifyIntegration.js` | Explicit HR review before existing approval checks. |
+| `server/scripts/verifyWorkflow.js` | Exercise new department review and payment acceptance tests. |
+| `client/scripts/browserFixtures.cjs` | Add department payroll responses to responsive fixtures. |
+| `README.md` | Document the new operational flow and API restrictions. |
+| `progress.md` | This change record. |
+
+Verification: 30 backend and 4 frontend unit tests passed; production build and 156 responsive browser checks passed. Focused browser checks passed for HR review, Admin approval, receipt confirmation and mobile layout. The final live integration run passed 109 checks, including overdue reminder deduplication, future-date restrictions and duplicate payment prevention. Its disposable QA database was removed successfully. Syntax and whitespace checks passed.
+
+Limits: external payment recording is an Admin attestation, not provider verification. The confirmation covers the approved unpaid batch in full; partial or failed external payments must remain unconfirmed. Payroll preparation retains full monthly salaries and does not introduce automatic prorating. Historical records are preserved. Changes are local and uncommitted.
+
+## Final interface and workflow simplification — 19 October 2026
+
+This entry supersedes earlier descriptions of mandatory HR review, separate Admin approval and the Audit history interface. Previous entries are retained as development history.
+
+### Latest changes
+
+- Admin and HR can approve or reject payroll directly, including records they prepared or edited. The separate HR-review stage and different-approver restriction were removed from department and individual payroll decisions.
+- Budget validation, explicit confirmation, justification, stale-version checks and protection of approved records remain enforced. Budget adjustments and external-payment recording remain Admin-only.
+- The individual **Prepare payroll** section is collapsed by default for Admin and HR, using the existing disclosure styling. Selecting Edit opens it automatically. Collapsing the form preserves entered values.
+- Removed repeated employee-status bullet lists, explanatory payroll text and redundant page-source comments. Department totals and useful payment states remain visible.
+- Notifications now have a separate heading, readable message rows, compact read actions, explicit unread labels and a bounded scrollable list. The dropdown fits desktop and phone viewports and closes with Escape.
+- Removed the Audit history component, its Users-page integration, its read API endpoint and unused styling. Existing stored history and internal transaction records were retained.
+- Rewrote README.md as the current setup and operating guide, covering permissions, simplified approval, configuration, deployment, verification and limitations.
+- Added PRESENTER_NOTES.md: a short partner handout covering purpose, architecture, demonstration order, business rules, scope and likely lecturer questions.
+- Preserved this progress file during the implementation pass; this latest entry was appended afterward at the owner's request.
+
+### Files affected
+
+| Files | Change |
+| --- | --- |
+| `client/src/pages/Payroll.jsx` | Collapsible preparation form, automatic opening for edits and concise page text. |
+| `client/src/components/DepartmentPayroll.jsx`, `PayrollTable.jsx`, `PayrollSchedule.jsx` | Direct approval labels, reduced repetition and compact status information. |
+| `client/src/components/AccountMenu.jsx`, `client/src/index.css` | Responsive notification header, rows, actions and scroll containment; remove unused audit styling. |
+| `client/src/components/AuditHistory.jsx` | Deleted the Audit history interface. |
+| `client/src/pages/Users.jsx`, `server/routes/workflowRoutes.js` | Remove Audit history integration and read endpoint; keep notifications. |
+| `server/controllers/payrollApprovalController.js`, `departmentPayrollController.js`, `server/routes/payrollRoutes.js` | Allow direct Admin/HR decisions, including self-prepared payroll, while retaining financial checks. |
+| `server/controllers/payrollController.js`, `server/utils/payrollScheduler.js`, `client/src/pages/Settings.jsx` | Remove obsolete mandatory HR-review behavior and wording. |
+| `client/src/pages/Attendance.jsx`, `Dashboard.jsx`, `Departments.jsx`, `Employees.jsx`, `Leave.jsx`, `Login.jsx`, `Register.jsx`, `RouteError.jsx` | Remove redundant source comments without changing page behavior. |
+| `server/scripts/verifyIntegration.js`, `verifyWorkflow.js`, `verifyDepartmentPayroll.js` | Update acceptance checks for direct approval and retained protections. |
+| `README.md`, `PRESENTER_NOTES.md` | Final operating guide and concise presentation handout. |
+| `progress.md` | Append this current change and verification record. |
+
+### Latest verification
+
+| Check | Result |
+| --- | --- |
+| Backend unit tests | 30 passed |
+| Frontend unit tests | 4 passed |
+| Live API integration | 93 passed, including same-user approval, stale-record protection, combined budget checks and external-payment recording |
+| Notification layout | Passed at 320, 390, 768 and 1440 pixels; contained scrolling, viewport fit and Escape behavior verified |
+| Focused interface checks | Audit history absent; preparation form collapsed by default |
+| Production build | Passed |
+| Whitespace checks | Passed |
+
+The live run removed its disposable QA database successfully. Browser checks used deterministic API fixtures; representative mobile notifications were visually inspected. The earlier 156-screen matrix remains historical evidence from the preceding workflow pass and was not repeated for this final cleanup.
+
+No payment-provider integration was added. Admin still confirms completed external payments manually; payroll approval does not transfer money. The Word document remains an earlier architecture snapshot. README.md describes the current behavior. Changes were local and uncommitted at the end of this pass; no production deployment was performed.
