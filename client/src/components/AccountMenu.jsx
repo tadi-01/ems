@@ -32,10 +32,16 @@ function AccountMenu({ user, onLogout }) {
   return <div className="account-menu" ref={container} onKeyDown={(event) => {
     if (event.key === "Escape") { setPanel(""); container.current?.querySelector("button")?.focus(); }
   }}>
-    <button className="button button-secondary" aria-expanded={panel === "notifications"}
-      onClick={() => { setPanel(panel === "notifications" ? "" : "notifications"); load(); }}>Notifications ({data.unread})</button>
-    <button className="button button-secondary" aria-expanded={panel === "profile"}
-      onClick={() => setPanel(panel === "profile" ? "" : "profile")}><span className="masthead-name">{user?.name}</span><span className="role-label">{user?.role}</span></button>
+    <button type="button" className="account-icon-button notification-button" aria-label={`Notifications, ${data.unread} unread`} aria-expanded={panel === "notifications"}
+      onClick={() => { setPanel(panel === "notifications" ? "" : "notifications"); load(); }}>
+      <span className="notification-icon" aria-hidden="true"><span /></span>
+      {data.unread > 0 && <span className="notification-count" aria-hidden="true">{data.unread > 9 ? "9+" : data.unread}</span>}
+    </button>
+    <button type="button" className="profile-button" aria-label={`Open profile for ${user?.name || "user"}`} aria-expanded={panel === "profile"}
+      onClick={() => setPanel(panel === "profile" ? "" : "profile")}>
+      <span className="profile-avatar" aria-hidden="true">{(user?.name || "U").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("")}</span>
+      <span className="profile-summary"><span className="masthead-name">{user?.name}</span><span className="role-label">{user?.role}</span></span>
+    </button>
     {panel && <section className="masthead-panel" aria-label={panel === "profile" ? "Account" : "Notifications"}>
       {panel === "profile" ? <><strong>{user?.name}</strong><p>{user?.email}</p><button className="button" onClick={onLogout}>Log out</button></> : <>
         <div className="notification-heading"><h2>Notifications</h2>{data.unread > 0 && <button onClick={markAllRead}>Mark all read</button>}</div>{error && <p role="alert">{error} <button onClick={load}>Retry</button></p>}

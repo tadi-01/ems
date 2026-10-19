@@ -254,6 +254,12 @@ Validation for this pass: backend unit tests, frontend unit tests, production bu
 - Admin and HR no longer see or use the Apply for leave form.
 - Removed the "Recorded net, not payments" qualifier from the Monthly payroll dashboard card.
 
+## Profile and notification control refresh — 19 October 2026
+
+- Restyled notifications as a compact outlined icon control with an unread badge.
+- Restyled the profile control as a circular avatar button with the user name and role visible on larger screens and an avatar-only control on mobile.
+- Preserved accessible labels, keyboard focus states, existing notification behavior, and profile/logout behavior.
+
 ## Decision justification removal — 19 October 2026
 
 - Removed the Justification field from the shared Admin/HR decision form.
