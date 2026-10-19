@@ -256,6 +256,8 @@ Validation for this pass: backend unit tests, frontend unit tests, production bu
 
 ## Profile and notification control refresh — 19 October 2026
 
+- Refined both controls to smaller, cleaner minimalist icons: a compact notification outline with a subtle unread badge and a reduced profile avatar.
+
 - Restyled notifications as a compact outlined icon control with an unread badge.
 - Restyled the profile control as a circular avatar button with the user name and role visible on larger screens and an avatar-only control on mobile.
 - Preserved accessible labels, keyboard focus states, existing notification behavior, and profile/logout behavior.
