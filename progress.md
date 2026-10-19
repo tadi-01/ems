@@ -250,3 +250,4 @@ Validation for this pass: backend unit tests, frontend unit tests, production bu
 - Admin and HR users no longer see the employee-only account-link reminder on the Leave page.
 - Admin and HR users no longer see the My payslips switch or heading; their Payroll page opens directly on All payslips.
 - Employee leave and personal payslip behavior remains unchanged.
+- Admin and HR no longer fetch or render the My leave history table; their Leave page is reserved for leave review.

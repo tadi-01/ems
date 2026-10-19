@@ -24,8 +24,8 @@ function Leave() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadMyLeaves();
-  }, []);
+    if (!canReview) loadMyLeaves();
+  }, [canReview]);
 
   async function loadMyLeaves() {
     try {
@@ -93,43 +93,47 @@ function Leave() {
         <LeaveForm saving={saving} form={form} onChange={updateField} onSubmit={submitForm} />
       )}
 
-      <h2>My leave history</h2>
-      <div className="table-wrap" tabIndex="0" role="region" aria-label="Scrollable records">
-        <table>
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>From</th>
-              <th>To</th>
-              <th>Days</th>
-              <th>Reason</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>{leaves.length === 0 && <EmptyRow columns={7}>No leave requests yet. Your requests and their status will appear here.</EmptyRow>}
-            {leaves.map((leave) => (
-              <tr key={leave._id}>
-                <td>{leave.leaveType}</td>
-                <td>{leave.startDate.slice(0, 10)}</td>
-                <td>{leave.endDate.slice(0, 10)}</td>
-                <td>{leave.days}</td>
-                <td>{leave.reason}</td>
-                <td>
-                  <span className={`status status-${leave.status.toLowerCase()}`}>
-                    {leave.status}
-                  </span>
-                </td>
-                <td>
-                  {leave.status === "Pending" && (
-                    <button onClick={() => cancelRequest(leave._id)}>Cancel</button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {!canReview && (
+        <>
+          <h2>My leave history</h2>
+          <div className="table-wrap" tabIndex="0" role="region" aria-label="Scrollable records">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Days</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>{leaves.length === 0 && <EmptyRow columns={7}>No leave requests yet. Your requests and their status will appear here.</EmptyRow>}
+                {leaves.map((leave) => (
+                  <tr key={leave._id}>
+                    <td>{leave.leaveType}</td>
+                    <td>{leave.startDate.slice(0, 10)}</td>
+                    <td>{leave.endDate.slice(0, 10)}</td>
+                    <td>{leave.days}</td>
+                    <td>{leave.reason}</td>
+                    <td>
+                      <span className={`status status-${leave.status.toLowerCase()}`}>
+                        {leave.status}
+                      </span>
+                    </td>
+                    <td>
+                      {leave.status === "Pending" && (
+                        <button onClick={() => cancelRequest(leave._id)}>Cancel</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {canReview && <LeaveReview refreshKey={refreshKey} onReviewed={loadMyLeaves} />}
     </main>
