@@ -24,14 +24,26 @@ const port = process.env.PORT || 5000;
 
 // Only the deployed React app (and the local Vite server) may call this API
 // from a browser. A slash at the end of CLIENT_URL is removed so it matches.
-const allowedOrigins = [
+const allowedOrigins = new Set([
   process.env.CLIENT_URL?.replace(/\/$/, ""),
   "http://localhost:5173",
   "http://127.0.0.1:5173",
-].filter(Boolean);
+].filter(Boolean));
 
-app.use(cors({ origin: allowedOrigins }));
-app.use(express.json());
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error("Origin is not allowed."));
+  },
+}));
+app.disable("x-powered-by");
+app.use((request, response, next) => {
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("X-Frame-Options", "SAMEORIGIN");
+  next();
+});
+app.use(express.json({ limit: "100kb" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/workflow", workflowRoutes);

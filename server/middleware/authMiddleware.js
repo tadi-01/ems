@@ -4,9 +4,10 @@ import User from "../models/User.js";
 // Checks the bearer token and adds the logged-in user details to the request.
 async function protectRoute(request, response, next) {
   const authorization = request.headers.authorization;
-  const token = authorization?.startsWith("Bearer ")
-    ? authorization.split(" ")[1]
+  const tokenMatch = typeof authorization === "string"
+    ? authorization.match(/^Bearer\s+([^\s]+)$/i)
     : null;
+  const token = tokenMatch?.[1] || null;
 
   if (!token) {
     response.status(401).json({ message: "Please log in first." });
