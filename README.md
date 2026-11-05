@@ -195,6 +195,14 @@ service. Set `VITE_API_URL=https://YOUR_API_HOST/api` before building the Vercel
 deployment. `client/vercel.json` provides SPA route fallback. After deployment, check
 health, login, registration, employee linking and nested-route refresh.
 
+### Web Analytics
+
+The frontend includes Vercel Web Analytics once at the application root, covering
+public and signed-in pages. In the Vercel `ems` project, open **Analytics** and
+enable Web Analytics, then deploy the frontend. Visit the deployed site to generate
+the first page views and check them in the project's Analytics dashboard.
+Local development logs analytics events without sending them.
+
 ## Troubleshooting
 
 - **Registration fails** — check API health, API URL, allowed frontend origin and duplicate email.
